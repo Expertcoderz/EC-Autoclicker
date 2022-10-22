@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.0.0-alpha
+;@Ahk2Exe-SetVersion 1.0.0
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
@@ -817,7 +817,7 @@ CheckForNewerVersion(isManual) {
     oHttp.send()
 
     local verNumMatch
-    if !RegExMatch(oHttp.responseText, '"tag_name":"ve(.*?)"', &verNumMatch) {
+    if !RegExMatch(oHttp.responseText, '"tag_name":"v(.*?)"', &verNumMatch) {
         add_log("Unable to obtain latest release version")
         MsgBox "
         (
@@ -863,7 +863,7 @@ if A_IsCompiled {
         RegWrite A_NowUTC, "REG_DWORD", REG_KEY_PATH, "LastUpdateCheck"
         FileMove A_ScriptFullPath, A_ScriptDir "\" SubStr(A_Args[1], 8), true
         MsgBox "EC Autoclicker has been updated successfully.", "Update", "Iconi 262144"
-    } else if RegRead(REG_KEY_PATH, "AutoUpdate", false) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 7
+    } else if RegRead(REG_KEY_PATH, "AutoUpdate", false) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800
         CheckForNewerVersion(false)
 }
 
