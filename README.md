@@ -4,6 +4,8 @@ The EC (Expertcoderz) Autoclicker is an open source, advanced GUI autoclicking u
 [AutoHotkey](https://www.autohotkey.com/) v2. It aims to provide a large variety of configurability and functionality
 never before seen in other popular autoclicking tools.
 
+![image](https://user-images.githubusercontent.com/81153405/197328970-f0222c1d-2c1c-4de3-b224-79b9c817aee1.png)
+
 Executables provided in Releases are compiled using [Ahk2Exe](https://github.com/AutoHotkey/Ahk2Exe),
 with [UPX](https://upx.github.io/) for compression.
 
