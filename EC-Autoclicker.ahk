@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.0.1
+;@Ahk2Exe-SetVersion 1.0.2
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
@@ -852,20 +852,24 @@ Your current version is {}. Would you like to update now?
             MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker.`n`nMessage: " e.Message
                 , "Update", "Iconx 262144"
         else {
-            add_log("Running downloaded file and exiting")
-            Run A_ScriptDir "\" DOWNLOAD_FILE_NAME ' /replace:"' A_ScriptFullPath '"'
+            add_log("File downloaded")
+            Run "powershell -windowstyle Hidden -command start-sleep 1;"
+                . 'remove-item " ' A_ScriptFullPath ' ";'
+                . 'rename-item " ' A_ScriptDir "\" DOWNLOAD_FILE_NAME ' " EC-Autoclicker.exe;'
+                . 'start-process "' A_ScriptDir '\EC-Autoclicker.exe /updated"'
             ExitApp
         }
     }
 }
 
 if A_IsCompiled {
-    if A_Args.Length > 0 && RegExMatch(A_Args[1], "^/replace:.+$") {
+    if A_Args.Length > 0 && A_Args[1] = "/updated" {
         RegWrite A_NowUTC, "REG_DWORD", REG_KEY_PATH, "LastUpdateCheck"
-        FileMove A_ScriptFullPath, A_ScriptDir "\" SubStr(A_Args[1], 8), true
         MsgBox "EC Autoclicker has been updated successfully.", "Update", "Iconi 262144"
-    } else if RegRead(REG_KEY_PATH, "AutoUpdate", false) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800
+    } else if RegRead(REG_KEY_PATH, "AutoUpdate", true) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800 {
+        add_log("Automatically checking for newer version")
         CheckForNewerVersion(false)
+    }
 }
 
 Loop {
