@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.0.2
+;@Ahk2Exe-SetVersion 1.0.3
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
@@ -80,7 +80,7 @@ makeCheckable(name, checkbox, callback := 0, controls := []) {
         checkbox.OnEvent("Click", callback)
 }
 
-AutoclickerGui := Gui("+AlwaysOnTop", "EC Autolicker")
+AutoclickerGui := Gui("+AlwaysOnTop", "EC Autoclicker")
 AutoclickerGui.OnEvent("Close", Close)
 
 FileMenu := Menu()
