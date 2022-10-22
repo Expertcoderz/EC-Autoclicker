@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.0.0
+;@Ahk2Exe-SetVersion 1.0.1
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
@@ -826,7 +826,8 @@ Please try again later, or update EC Autoclicker manually if this error reoccurs
 )", "Update", "Iconx 262144"
         return
     }
-    if verNumMatch.1 = FileGetVersion(".") {
+    local thisVersion := SubStr(FileGetVersion(A_ScriptFullPath), 1, StrLen(FileGetVersion(A_ScriptFullPath)) - 2)
+    if verNumMatch.1 = thisVersion {
         add_log("Version is up to date with the latest release")
         if isManual
             MsgBox "Your version of EC Autoclicker is the latest (" verNumMatch.1 ")."
@@ -838,7 +839,7 @@ Please try again later, or update EC Autoclicker manually if this error reoccurs
         (
 A newer version of EC Autoclicker ({}) is available.
 Your current version is {}. Would you like to update now?
-)", verNumMatch.1, FileGetVersion(".")), "Update", "YesNo Icon? 262144") = "Yes" {
+)", verNumMatch.1, thisVersion), "Update", "YesNo Icon? 262144") = "Yes" {
         local DOWNLOAD_FILE_NAME := "EC-Autoclicker-New.exe"
         if A_ScriptName = DOWNLOAD_FILE_NAME {
             MsgBox "Please rename EC Autoclicker to something else before updating it.", "Update", "Iconx 262144"
