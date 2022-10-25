@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.1.2
+;@Ahk2Exe-SetVersion 1.1.3
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
@@ -155,7 +155,7 @@ HelpMenu.Add SZ_TABLE.Menu_Help_OnlineHelp
 HelpMenu.Add SZ_TABLE.Menu_Help_Report
     , (*) => Run("https://github.com/Expertcoderz/EC-Autoclicker/issues/new/choose")
 HelpMenu.Add SZ_TABLE.Menu_Help_Update
-    , (*) => CheckForNewerVersion(true)
+    , (*) => CheckForUpdates(true)
 if !A_IsCompiled
     HelpMenu.Disable SZ_TABLE.Menu_Help_Update
 HelpMenu.Add
@@ -320,7 +320,6 @@ add_log(text) {
 showGuiAtAutoclickerGuiPos(gui) {
     local posX, posY
     AutoclickerGui.GetPos &posX, &posY
-    global always_on_top
     gui.Opt (always_on_top ? "+" : "-") "AlwaysOnTop"
     gui.Show "x" posX " y" posY
 }
@@ -521,7 +520,7 @@ Hotkeys_ClearAllHotkeys(*) {
     Hotkeys_updateHotkeyBindings
 }
 
-profileNamePrompt(title, text, callback) {
+profileNamePrompt(title, text, callback, owner := AutoclickerGui) {
     static currentCallback
     static ProfileNamePromptGui
     if !IsSet(ProfileNamePromptGui) {
@@ -570,12 +569,18 @@ profileNamePrompt(title, text, callback) {
     ProfileNamePromptGui["PromptText"].Text := text
     ProfileNamePromptGui["ProfileNameEdit"].Value := ""
     ProfileNamePromptGui.Opt "-Disabled"
-    showGuiAtAutoclickerGuiPos ProfileNamePromptGui
+    owner.Opt "+Disabled"
+    if owner = AutoclickerGui
+        showGuiAtAutoclickerGuiPos ProfileNamePromptGui
+    else {
+        local posX, posY
+        owner.GetPos &posX, &posY
+        ProfileNamePromptGui.Opt (always_on_top ? "+" : "-") "AlwaysOnTop"
+        ProfileNamePromptGui.Show "x" posX " y" posY
+    }
 }
 
 ProfileCreate(*) {
-    AutoclickerGui.Opt "+Disabled"
-
     profileNamePrompt "Create/Update Profile"
         , "The current autoclicker configuration will`nbe saved with the following profile name:"
         , SubmitPrompt
@@ -658,10 +663,11 @@ ProfileManage(*) {
 
     ProfileRename(*) {
         local selectedProfileName := ProfilesGui["ProfileList"].GetText(ProfilesGui["ProfileList"].GetNext())
-        profileNamePrompt("Rename Profile"
+
+        profileNamePrompt "Rename Profile"
             , "The profile '" selectedProfileName "' will be renamed to:"
             , SubmitPrompt
-        )
+
         SubmitPrompt(newProfileName) {
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
                 if A_LoopRegName = selectedProfileName {
@@ -739,20 +745,32 @@ ProfileManage(*) {
 
             RegCreateKey REG_KEY_PATH "\Profiles\" profileName
 
-            Loop Parse FileRead(fileLocation), "`n" {
-                if !A_LoopField
-                    continue
-                local configMatch
-                RegExMatch A_LoopField, "^(?P<Name>\w+?)=(?P<Value>.+)$", &configMatch
-                add_log "Read: " configMatch["Name"] " = " configMatch["Value"]
-                if configMatch["Name"] = "Hotkeys"
-                    RegWrite StrReplace(configMatch["Value"], "`t", "`n"), "REG_MULTI_SZ"
-                        , REG_KEY_PATH "\Profiles\" profileName, "Hotkeys"
-                else
-                    RegWrite configMatch["Value"], configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
-                    , REG_KEY_PATH "\Profiles\" profileName, configMatch["Name"]
-            }
+            local e
+            try {
+                Loop Parse FileRead(fileLocation), "`n" {
+                    if !A_LoopField
+                        continue
+                    local configMatch
+                    RegExMatch A_LoopField, "^(?P<Name>\w+?)=(?P<Value>.+)$", &configMatch
+                    add_log "Read: " configMatch["Name"] " = " configMatch["Value"]
+                    if configMatch["Name"] = "Hotkeys"
+                        RegWrite StrReplace(configMatch["Value"], "`t", "`n"), "REG_MULTI_SZ"
+                            , REG_KEY_PATH "\Profiles\" profileName, "Hotkeys"
+                    else
+                        RegWrite configMatch["Value"], configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
+                        , REG_KEY_PATH "\Profiles\" profileName, configMatch["Name"]
+                }
+            } catch as e {
+                add_log "Import Profile error: " e.Message
+                MsgBox Format("
+                (
+An error occurred whilst importing the profile '{}' from {}.
+This is likely due to corrupt data.
 
+Message: {}
+)", profileName, fileLocation, e.Message), "Import Profile", "Iconx 8192"
+                return
+            }
             refreshProfileList profileName
 
             add_log "Finished importing profile '" profileName "'"
@@ -810,9 +828,16 @@ ProfileLoad(profileName, *) {
                     }
                 }
                 add_log "Configuration GUI updated from profile"
-            } catch as e
-                MsgBox "An error occurred whilst loading the profile '" profileName "'. This is likely due to corrupt data.`n`nMessage: " e.Message
-                    , "Load Profile", "Iconx 8192"
+            } catch as e {
+                add_log "Load Profile error: " e.Message
+                MsgBox Format("
+                (
+An error occurred whilst loading the profile '{}'.
+This is likely due to corrupt data.
+
+Message: {}
+)", profileName, e.Message), "Load Profile", "Iconx 8192"
+            }
             return
         }
     }
@@ -1016,8 +1041,18 @@ Close(*) {
     ExitApp
 }
 
-CheckForNewerVersion(isManual) {
-    add_log "Checking for newer version"
+CheckForUpdates(isManual) {
+    if !DllCall("Wininet.dll\InternetGetConnectedState", "Str", "0x40", "Int", 0) {
+        add_log "No internet connection; not checking for updates"
+        if isManual
+            MsgBox "
+        (
+EC Autoclicker is unable to check for updates as there is currently no internet connection.
+Please connect to the internet and try again.
+)", "Update", "Icon! 262144"
+        return
+    }
+    add_log "Checking for updates"
 
     local oHttp := ComObject("WinHttp.Winhttprequest.5.1")
     oHttp.open "GET", "https://api.github.com/repos/Expertcoderz/EC-Autoclicker/releases/latest"
@@ -1092,7 +1127,7 @@ if A_IsCompiled {
             , "Update", "Iconi 262144"
     } else if RegRead(REG_KEY_PATH, "AutoUpdate", true) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800 {
         add_log "Automatically checking for newer version"
-        CheckForNewerVersion false
+        CheckForUpdates false
     }
 }
 
