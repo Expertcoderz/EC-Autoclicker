@@ -330,6 +330,28 @@ hideOwnedGui(gui, *) {
     WinActivate "ahk_id " AutoclickerGui.Hwnd
 }
 
+validateProfileNameInput(profileName) {
+    if RegExReplace(profileName, "\s") = ""
+        return false
+    if profileName ~= "[\\/:\*\?`"<>\|]" {
+        MsgBox "A profile name can't contain any of the following characters:`n\ / : * ? `" < > |", "Create/Update Profile", "Iconx 8192"
+        return false
+    }
+    Loop Reg REG_KEY_PATH "\Profiles", "K" {
+        if A_LoopRegName = profileName {
+            if MsgBox(
+                "A profile similarly named '" A_LoopRegName "' already exists. Would you like to overwrite it?"
+                , "Overwrite Profile", "YesNo Iconi 8192"
+            ) = "Yes" {
+                RegDeleteKey A_LoopRegKey "\" A_LoopRegName
+                return true
+            } else
+                return false
+        }
+    }
+    return true
+}
+
 formatHotkeyText(hotkey) {
     local k, v
     for k, v in Map("~", "", "^", "{ctrl}", "!", "{alt}", "+", "{shift}")
@@ -520,72 +542,35 @@ Hotkeys_ClearAllHotkeys(*) {
     Hotkeys_updateHotkeyBindings
 }
 
-profileNamePrompt(title, text, callback, owner := AutoclickerGui) {
-    static currentCallback
+ProfileCreate(*) {
     static ProfileNamePromptGui
     if !IsSet(ProfileNamePromptGui) {
-        ProfileNamePromptGui := Gui("-SysMenu +Owner" AutoclickerGui.Hwnd)
+        ProfileNamePromptGui := Gui("-SysMenu +Owner" AutoclickerGui.Hwnd, "Create/Update Profile")
         ProfileNamePromptGui.OnEvent "Escape", hideOwnedGui
         ProfileNamePromptGui.OnEvent "Close", hideOwnedGui
 
-        ProfileNamePromptGui.AddText "w206 r2 vPromptText"
+        ProfileNamePromptGui.AddText "w206 r2"
+            , "The current autoclicker configuration will`nbe saved with the following profile name:"
         ProfileNamePromptGui.AddEdit "wp vProfileNameEdit"
 
         ProfileNamePromptGui.AddButton("w100 Default", "OK")
-            .OnEvent("Click", (*) => CallbackWrapper(currentCallback))
+            .OnEvent("Click", SubmitPrompt)
         ProfileNamePromptGui.AddButton("yp wp", "Cancel")
             .OnEvent("Click", (*) => hideOwnedGui(ProfileNamePromptGui))
 
         add_log "Created profile name prompt GUI"
     }
 
-    CallbackWrapper(currentCallback) {
-        local profileName := ProfileNamePromptGui["ProfileNameEdit"].Value
-        if RegExReplace(profileName, "\s") = ""
-            return
-        if profileName ~= "[\\/:\*\?`"<>\|]" {
-            MsgBox "A profile name can't contain any of the following characters:`n\ / : * ? `" < > |", "Create/Update Profile", "Iconx 8192"
-            return
-        }
-        Loop Reg REG_KEY_PATH "\Profiles", "K" {
-            if A_LoopRegName = profileName {
-                if MsgBox(
-                    "A profile similarly named '" A_LoopRegName "' already exists. Would you like to overwrite it with the new configuration set?"
-                    , "Overwrite Profile", "YesNo Iconi 8192"
-                ) = "Yes"
-                    RegDeleteKey A_LoopRegKey "\" A_LoopRegName
-                else
-                    return
-            }
-        }
-        ProfileNamePromptGui.Opt "+Disabled"
-        currentCallback profileName
-        setupProfiles
-        hideOwnedGui ProfileNamePromptGui
-    }
-
-    currentCallback := callback
-    ProfileNamePromptGui.Title := title
-    ProfileNamePromptGui["PromptText"].Text := text
     ProfileNamePromptGui["ProfileNameEdit"].Value := ""
     ProfileNamePromptGui.Opt "-Disabled"
-    owner.Opt "+Disabled"
-    if owner = AutoclickerGui
-        showGuiAtAutoclickerGuiPos ProfileNamePromptGui
-    else {
-        local posX, posY
-        owner.GetPos &posX, &posY
-        ProfileNamePromptGui.Opt (always_on_top ? "+" : "-") "AlwaysOnTop"
-        ProfileNamePromptGui.Show "x" posX " y" posY
-    }
-}
+    AutoclickerGui.Opt "+Disabled"
+    showGuiAtAutoclickerGuiPos ProfileNamePromptGui
 
-ProfileCreate(*) {
-    profileNamePrompt "Create/Update Profile"
-        , "The current autoclicker configuration will`nbe saved with the following profile name:"
-        , SubmitPrompt
+    SubmitPrompt(*) {
+        local profileName := ProfileNamePromptGui["ProfileNameEdit"].Value
+        if !validateProfileNameInput(profileName)
+            return
 
-    SubmitPrompt(profileName) {
         add_log "Reading configuration data"
 
         local currentConfig := AutoclickerGui.Submit(false)
@@ -606,6 +591,9 @@ ProfileCreate(*) {
         RegWrite serializedHotkeys, "REG_MULTI_SZ", REG_KEY_PATH "\Profiles\" profileName, "Hotkeys"
 
         add_log "Wrote configuration data to registry"
+
+        setupProfiles
+        hideOwnedGui ProfileNamePromptGui
     }
 }
 
@@ -664,29 +652,66 @@ ProfileManage(*) {
     ProfileRename(*) {
         local selectedProfileName := ProfilesGui["ProfileList"].GetText(ProfilesGui["ProfileList"].GetNext())
 
-        profileNamePrompt "Rename Profile"
-            , "The profile '" selectedProfileName "' will be renamed to:"
-            , SubmitPrompt
+        static ProfileRenamePromptGui
+        if !IsSet(ProfileRenamePromptGui) {
+            ProfileRenamePromptGui := Gui("-SysMenu +Owner" ProfilesGui.Hwnd, "Rename Profile")
+            ProfileRenamePromptGui.OnEvent "Escape", CancelPrompt
+            ProfileRenamePromptGui.OnEvent "Close", CancelPrompt
 
-        SubmitPrompt(newProfileName) {
+            ProfileRenamePromptGui.AddText "w206 vPromptText"
+            ProfileRenamePromptGui.AddEdit "wp vProfileNameEdit"
+
+            ProfileRenamePromptGui.AddButton("w100 Default", "OK")
+                .OnEvent("Click", SubmitPrompt)
+            ProfileRenamePromptGui.AddButton("yp wp", "Cancel")
+                .OnEvent("Click", CancelPrompt)
+
+            add_log "Created profile name prompt GUI"
+        }
+
+        ProfileRenamePromptGui["PromptText"].Text := "The profile '" selectedProfileName "' will be renamed to:"
+        ProfileRenamePromptGui["ProfileNameEdit"].Value := ""
+        ProfileRenamePromptGui.Opt "-Disabled"
+        ProfilesGui.Opt "+Disabled"
+        showGuiAtAutoclickerGuiPos ProfileRenamePromptGui
+
+        SubmitPrompt(*) {
+            local profileNewName := ProfileRenamePromptGui["ProfileNameEdit"].Value
+            if !validateProfileNameInput(profileNewName)
+                return
+
+            ProfileRenamePromptGui.Opt "+Disabled"
+
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
                 if A_LoopRegName = selectedProfileName {
-                    local newProfileRegPath := A_LoopRegKey "\" newProfileName
+                    local newProfileRegPath := A_LoopRegKey "\" profileNewName
                     RegCreateKey newProfileRegPath
 
                     Loop Reg A_LoopRegKey "\" A_LoopRegName
                         RegWrite RegRead(), A_LoopRegType, newProfileRegPath, A_LoopRegName
-                    add_log "Copied reg data to profile '" newProfileName "'"
+                    add_log "Copied reg data to profile '" profileNewName "'"
 
                     RegDeleteKey
                     add_log "Deleted profile '" selectedProfileName "'"
 
-                    refreshProfileList newProfileName
+                    ProfileRenamePromptGui.Hide
+                    ProfilesGui.Opt "-Disabled"
+                    WinActivate "ahk_id " ProfilesGui.Hwnd
+                    refreshProfileList profileNewName
+                    setupProfiles
                     return
                 }
             }
             MsgBox "The profile '" selectedProfileName "' does not exist or has been deleted.", "Error", "Iconx 8192"
+            ProfileRenamePromptGui.Opt "-Disabled"
             refreshProfileList
+            setupProfiles
+        }
+
+        CancelPrompt(*) {
+            ProfileRenamePromptGui.Hide
+            ProfilesGui.Opt "-Disabled"
+            WinActivate "ahk_id " ProfilesGui.Hwnd
         }
     }
 
