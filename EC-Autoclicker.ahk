@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.1.0
+;@Ahk2Exe-SetVersion 1.1.2
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
@@ -148,9 +148,6 @@ PersistentOptions := [{ ValueName: "AlwaysOnTop",
                     Toggler: (*) => 0
                 }
     ]
-
-OptionsMenu.Add
-OptionsMenu.Add SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault
 
 HelpMenu := Menu()
 HelpMenu.Add SZ_TABLE.Menu_Help_OnlineHelp
@@ -1027,7 +1024,7 @@ CheckForNewerVersion(isManual) {
     oHttp.send
 
     local verNumMatch
-    if !RegExMatch(oHttp.responseText, '"tag_name":"(.*?)"', &verNumMatch) {
+    if !RegExMatch(oHttp.responseText, '"tag_name":"v(.*?)"', &verNumMatch) {
         add_log "Unable to obtain latest release version"
         MsgBox "
         (
@@ -1042,7 +1039,7 @@ Please try again later, or update EC Autoclicker manually if this error reoccurs
         add_log "Current version is up to date with the latest release"
         if isManual
             MsgBox "EC Autoclicker is up to date (" verNumMatch.1 ").", "Update", "Iconi 262144"
-        RegWrite A_NowUTC, "REG_DWORD", REG_KEY_PATH, "LastUpdateCheck"
+        RegWrite A_NowUTC, "REG_SZ", REG_KEY_PATH, "LastUpdateCheck"
         return
     }
 
@@ -1082,13 +1079,15 @@ for optionInfo in PersistentOptions {
     if optionInfo.CurrentSetting
         OptionsMenu.Check optionInfo.Text
 }
+OptionsMenu.Add
+OptionsMenu.Add SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault
 
 AutoclickerGui.Show "x0"
 add_log "Welcome to EC Autoclicker"
 
 if A_IsCompiled {
     if A_Args.Length > 0 && A_Args[1] = "/updated" {
-        RegWrite A_NowUTC, "REG_DWORD", REG_KEY_PATH, "LastUpdateCheck"
+        RegWrite A_NowUTC, "REG_SZ", REG_KEY_PATH, "LastUpdateCheck"
         MsgBox "EC Autoclicker has been updated successfully.`nNew version: " SubStr(FileGetVersion(A_ScriptFullPath), 1, -2)
             , "Update", "Iconi 262144"
     } else if RegRead(REG_KEY_PATH, "AutoUpdate", true) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800 {
