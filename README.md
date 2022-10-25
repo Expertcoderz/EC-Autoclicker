@@ -17,16 +17,16 @@ with [UPX](https://upx.github.io/) for compression.
 * Definable pre-start delay
 * Automatic stop after a specific number of clicks, when a specific duration has passed and/or at a specific time
 * The ability to position the mouse cursor at a specific location every click or randomly within a specific boundary
+* Configurable start/stop hotkeys (multiple supported)
 * Profiles – saved and named sets of autoclicking configurations that can be created/renamed/deleted/exported and imported
 * Persistent miscellaneous GUI settings
 * Automatic update checking (optional)
 
 ## Upcoming Features
 
-* Configurable start/stop hotkeys
 * Mouse button hold-down
 * "Simplified View" mode — only a list of profiles and the Start/Stop button are displayed
-* Ability to select between different units (ms/s/min/h) for inputting duration values
+* The ability to select between different units (ms/s/min/h) for inputting duration values
 
 ## Getting Started
 
