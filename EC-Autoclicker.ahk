@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.1.3
+;@Ahk2Exe-SetVersion 1.1.4-wip
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
@@ -787,15 +787,17 @@ ProfileManage(*) {
                 }
             } catch as e {
                 add_log "Import Profile error: " e.Message
+                try RegDeleteKey REG_KEY_PATH "\Profiles\" profileName
                 MsgBox Format("
                 (
 An error occurred whilst importing the profile '{}' from {}.
-This is likely due to corrupt data.
+This is usually due to the file's data being corrupt or invalid.
 
 Message: {}
 )", profileName, fileLocation, e.Message), "Import Profile", "Iconx 8192"
                 return
             }
+
             refreshProfileList profileName
 
             add_log "Finished importing profile '" profileName "'"
