@@ -57,6 +57,7 @@ is the same as the one published in Releases.
 
 ## Notes
 
+* EC Autoclicker has been tested to work on Windows 7 and higher. It is incompatible with Windows XP.
 * In order for automated clicks to have effect on windows belonging to elevated processes, EC Autoclicker must be
   run as administrator.
 * The X and Y mouse position coordinates displayed at the bottom right corner respect the screen/window
