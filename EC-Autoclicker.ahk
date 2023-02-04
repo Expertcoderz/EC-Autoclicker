@@ -752,9 +752,10 @@ ProfileManage(*) {
         for fileLocation in fileLocations {
             add_log "Importing profile from " fileLocation
 
-            local profileNameMatch
-            RegExMatch fileLocation, ".*\\\K(.*?)(\..*)?$", &profileNameMatch
-            local profileName := profileNameMatch.1
+            ;local profileNameMatch
+            ;RegExMatch fileLocation, ".*\\\K(.*?)(\..*)?$", &profileNameMatch
+            local profileName ;:= profileNameMatch.1
+            SplitPath fileLocation, &profileName
 
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
                 if A_LoopRegName = profileName {
