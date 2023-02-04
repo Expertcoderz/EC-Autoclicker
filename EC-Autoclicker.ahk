@@ -1,5 +1,5 @@
 #Warn
-#Requires AutoHotkey v2.0-beta
+#Requires AutoHotkey v2.0
 #NoTrayIcon
 #SingleInstance Force
 
@@ -168,7 +168,7 @@ Menus.Add SZ_TABLE.Menu_Options, OptionsMenu
 Menus.Add SZ_TABLE.Menu_Help, HelpMenu
 AutoclickerGui.MenuBar := Menus
 
-AutoclickerGui.AddTab3 "w250 h205 vTab", [
+AutoclickerGui.AddTab3 "w250 h208 vTab", [
     SZ_TABLE.Tabs.General,
     SZ_TABLE.Tabs.Scheduling,
     SZ_TABLE.Tabs.Positioning,
@@ -224,7 +224,7 @@ AutoclickerGui.AddGroupBox "xs ys+25 w226 h148 Section", "Stop after"
 makeCheckable "Scheduling_StopAfterNumClicks_Checkbox", AutoclickerGui.AddCheckbox("xs+10 yp+20", "&Number of clicks:")
     , Scheduling_StopAfterNumClicksToggled
 
-AutoclickerGui.AddEdit "xp+100 yp-2 w45 vScheduling_StopAfterNumClicks_NumEdit Disabled Limit Number", "50"
+AutoclickerGui.AddEdit "xp+104 yp-2 w45 vScheduling_StopAfterNumClicks_NumEdit Disabled Limit Number", "50"
 
 makeCheckable "Scheduling_StopAfterDuration_Checkbox", AutoclickerGui.AddCheckbox("xs+10 yp+25", "D&uration:")
     , Scheduling_StopAfterDurationToggled
@@ -235,7 +235,7 @@ AutoclickerGui.AddText "xp+48 yp+2 vScheduling_StopAfterDuration_UnitText Disabl
 makeCheckable "Scheduling_StopAfterTime_Checkbox", AutoclickerGui.AddCheckbox("xs+10 yp+25", "&Time:")
     , Scheduling_StopAfterTimeToggled
 
-AutoclickerGui.AddDateTime "xp+48 yp-2 w80 vScheduling_StopAfterTime_DateTime Disabled", "Time"
+AutoclickerGui.AddDateTime "xp+48 yp-2 w100 vScheduling_StopAfterTime_DateTime Disabled", "Time"
 
 AutoclickerGui.AddDropDownList "xs+10 yp+26 w206 vScheduling_StopAfterMode_DropDownList AltSubmit Choose1 Disabled", [
     "Whichever comes first",
@@ -275,7 +275,7 @@ PerBoundaryConfigControls := { %SZ_TABLE.Positioning_Boundary_Mode.None%: [], %S
     ]
 }
 
-AutoclickerGui.AddGroupBox "xs yp+40 w226 h45 Section", "Mouse position relative to"
+AutoclickerGui.AddGroupBox "xs yp+44 w226 h45 Section", "Mouse position relative to"
 makeRadioGroup "Positioning_RelativeTo_Radio", [
     AutoclickerGui.AddRadio("xs+10 yp+20 vPositioning_RelativeTo_Radio Checked", "Entire &screen"),
     AutoclickerGui.AddRadio("yp", "Focused &window")
@@ -283,13 +283,13 @@ makeRadioGroup "Positioning_RelativeTo_Radio", [
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Hotkeys)
 
-AutoclickerGui.AddListView("w226 h135 vHotkeys_HotkeyList_ListView -LV0x10 Sort", ["Action", "Global", "Hotkey"])
+AutoclickerGui.AddListView("w226 h140 vHotkeys_HotkeyList_ListView -LV0x10 Sort", ["Action", "Global", "Hotkey"])
     .OnEvent("ItemSelect", Hotkeys_ItemSelectionChanged)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(1, 50)
-AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(2, 40)
-AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(3, 132)
+AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(2, 42)
+AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(3, 130)
 
-AutoclickerGui.AddButton("xm+10 yp+145 w72 vHotkeys_AddHotkey_Button", "&Add")
+AutoclickerGui.AddButton("xm+10 yp+147 w72 vHotkeys_AddHotkey_Button", "&Add")
     .OnEvent("Click", Hotkeys_AddHotkey)
 AutoclickerGui.AddButton("yp wp vHotkeys_RemoveHotkey_Button Disabled", "&Remove")
     .OnEvent("Click", Hotkeys_RemoveHotkey)
@@ -966,11 +966,12 @@ AboutOpen(*) {
         AboutGui.OnEvent "Escape", hideOwnedGui
         AboutGui.OnEvent "Close", hideOwnedGui
 
-        AboutGui.AddPicture "w40 h40", A_IsCompiled ? A_ScriptFullPath : "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe"
+        AboutGui.AddPicture "w40 h40", A_IsCompiled ? A_ScriptFullPath : A_ProgramFiles "\AutoHotkey\v2\AutoHotkey.exe"
         AboutGui.SetFont "s12 bold"
         AboutGui.AddText "xp+50 yp", "EC Autoclicker version " (A_IsCompiled ? SubStr(FileGetVersion(A_ScriptFullPath), 1, -2) : "?")
         AboutGui.SetFont
-        AboutGui.AddLink "xp", "<a>https://github.com/Expertcoderz/EC-Autoclicker</a>"
+        AboutGui.AddText "xp wp", "An open-source configurable autoclicking utility for Windows."
+        AboutGui.AddLink "xp", "<a href=`"https://github.com/Expertcoderz/EC-Autoclicker`">https://github.com/Expertcoderz/EC-Autoclicker</a>"
 
         add_log "Created About GUI"
     }
