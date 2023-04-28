@@ -19,7 +19,7 @@ with [UPX](https://upx.github.io/) for compression.
 * The ability to position the mouse cursor at a specific location every click or randomly within a specific boundary
 * Configurable start/stop hotkeys (multiple supported)
 * Profiles – saved and named sets of autoclicking configurations that can be created/renamed/deleted/exported and imported
-* Persistent miscellaneous GUI settings
+* Persistent settings regarding the user interface
 * Automatic update checking (optional)
 
 ## Upcoming Features
@@ -57,15 +57,15 @@ is the same as the one published in Releases.
 
 ## Notes
 
-* EC Autoclicker has been tested to work on Windows 7 and higher. It is incompatible with Windows XP.
-* In order for automated clicks to have effect on windows belonging to elevated processes, EC Autoclicker must be
-  run as administrator.
-* The X and Y mouse position coordinates displayed at the bottom right corner respect the screen/window
+* EC Autoclicker has been tested to work on Windows 7 and higher, where AutoHotkey v2 is supported. It is incompatible with Windows XP.
+* In order for automated clicks to have effect on windows of elevated processes, EC Autoclicker must be
+  run with administrative privileges.
+* The X and Y mouse position coordinates displayed at the bottom right corner depend on the screen/window
   relativity configuration under the *Positioning* tab.
 * Persistent settings/options are stored in the Windows Registry under `HKEY_CURRENT_USER\Software\Expertcoderz\Autoclicker`.
   Profiles are stored as keys under the `Autoclicker\Profiles` subkey.
-* Automatic updates, if enabled, only take place up to once a week and happen after a confirmation prompt which is
-  displayed when EC Autoclicker is launched (if there is an update available).
+* If the option for automatic updates is enabled, EC Autoclicker will check once a week for any updates, and download them only after
+  a confirmation prompt on launch.
 
 ## Contributing
 
