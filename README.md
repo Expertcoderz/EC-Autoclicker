@@ -1,8 +1,8 @@
 # EC Autoclicker
 
-The EC (Expertcoderz) Autoclicker is an open source, advanced GUI autoclicking utility for Windows, written fully in
+The EC (Expertcoderz) Autoclicker is an open source, advanced autoclicking utility for Windows, written fully in
 [AutoHotkey](https://www.autohotkey.com/) v2. It aims to provide a large variety of configurability and functionality
-never before seen in other popular autoclicking tools.
+never before seen in other general-purpose autoclicking tools.
 
 ![image](https://user-images.githubusercontent.com/81153405/197357672-2907060d-9ce3-4f93-8696-6078b48f4720.png)
 
@@ -34,17 +34,17 @@ with [UPX](https://upx.github.io/) for compression.
 
 (This is the most stable method and is recommended if you do not intend to modify EC Autoclicker's source.)
 
-**Prerequisites:** None, as EC Autoclicker is a portable standalone application—no installation or external dependencies is required.
+**Prerequisites:** None. EC Autoclicker is a portable standalone application—no installation is needed.
 
 Download the executable file from the [latest release](https://github.com/Expertcoderz/EC-Autoclicker/releases/latest)
 and run it to use EC Autoclicker.
 
 *You may receive antivirus warnings when downloading/opening the EC Autoclicker executable because Expertcoderz
-doesn't know how to get them [signed](https://en.wikipedia.org/wiki/Code_signing).*
+doesn't have the resources to get them [signed](https://en.wikipedia.org/wiki/Code_signing).*
 
 ### Method 2: Uncompiled AHK script (source)
 
-**Prerequisites:** [AutoHotkey v2 Beta](https://www.autohotkey.com/download/ahk-v2.exe) must be installed.
+**Prerequisites:** [AutoHotkey v2](https://www.autohotkey.com/download/ahk-v2.exe) must be installed.
 
 **Note:** In its uncompiled script form, EC Autoclicker is unable to check for newer versions online
 (neither automatically nor manually).
@@ -78,7 +78,7 @@ that it can be linked in your PR description.
 Similarly, if it is meant to introduce an enhancement or new feature, it is strongly encouraged that you [open a
 feature request](https://github.com/Expertcoderz/EC-Autoclicker/issues/new/choose) first before actually working
 on the PR. This gives an opportunity for your idea to be maintainer-evaluated and to receive feedback that potentially
-saves time in having to edit/rewrite your code.
+saves time lest changes need to be made.
 
 Before submitting a PR, ensure that you include the following in its description:
 
