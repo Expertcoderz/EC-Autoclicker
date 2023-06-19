@@ -119,35 +119,38 @@ setupProfiles()
 
 OptionsMenu := Menu()
 
-; NOTE: the weird formatting below is unintentional and caused by the auto-formatter
-PersistentOptions := [{ ValueName: "AlwaysOnTop",
-    Default: true,
-    Text: SZ_TABLE.Menu_Options_AlwaysOnTop,
-    Toggler: toggleAlwaysOnTop
-},
-    { ValueName: "MinButtonVisible",
+PersistentOptions := [
+    {
+        ValueName: "AlwaysOnTop",
+        Default: true,
+        Text: SZ_TABLE.Menu_Options_AlwaysOnTop,
+        Toggler: toggleAlwaysOnTop
+    },
+    {
+        ValueName: "MinButtonVisible",
         Default: true,
         Text: SZ_TABLE.Menu_Options_MinButtonVisible,
         Toggler: (optionInfo) => AutoclickerGui.Opt((optionInfo.CurrentSetting ? "+" : "-") "MinimizeBox")
     },
-        {
-            ValueName: "EscToClose",
-            Default: false,
-            Text: SZ_TABLE.Menu_Options_EscToClose,
-            Toggler: (optionInfo) => AutoclickerGui.OnEvent("Escape", Close, optionInfo.CurrentSetting ? 1 : 0)
-        },
-            { ValueName: "HotkeysActive",
-                Default: true,
-                Text: SZ_TABLE.Menu_Options_HotkeysActive,
-                Toggler: toggleHotkeysActive
-            },
-                {
-                    ValueName: "AutoUpdate",
-                    Default: true,
-                    Text: SZ_TABLE.Menu_Options_AutoUpdate,
-                    Toggler: (*) => 0
-                }
-    ]
+    {
+        ValueName: "EscToClose",
+        Default: false,
+        Text: SZ_TABLE.Menu_Options_EscToClose,
+        Toggler: (optionInfo) => AutoclickerGui.OnEvent("Escape", Close, optionInfo.CurrentSetting ? 1 : 0)
+    },
+    {
+        ValueName: "HotkeysActive",
+        Default: true,
+        Text: SZ_TABLE.Menu_Options_HotkeysActive,
+        Toggler: toggleHotkeysActive
+    },
+    {
+        ValueName: "AutoUpdate",
+        Default: true,
+        Text: SZ_TABLE.Menu_Options_AutoUpdate,
+        Toggler: (*) => 0
+    }
+]
 
 HelpMenu := Menu()
 HelpMenu.Add SZ_TABLE.Menu_Help_OnlineHelp
