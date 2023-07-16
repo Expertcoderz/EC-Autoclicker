@@ -1025,7 +1025,7 @@ Start(*) {
                     . " " Random(currentConfig.Positioning_YMinPos_NumEdit, currentConfig.Positioning_YMaxPos_NumEdit)
         }
 
-        Click coords buttonClickData
+        Click coords, buttonClickData
 
         AutoclickerGui["StatusBar"].SetText(" Clicks: " (++clickCount))
         AutoclickerGui["StatusBar"].SetText("Elapsed: " Round((A_TickCount - timeStarted) / 1000, 2), 2)
