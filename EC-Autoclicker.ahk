@@ -412,41 +412,50 @@ Positioning_ChangedModeSelection(radio, *) {
 
 Hotkeys_updateHotkeyBindings() {
     AutoclickerGui["Hotkeys_HotkeyList_ListView"].Delete()
+
     local hotkeyData
     for hotkeyData in configured_hotkeys {
         AutoclickerGui["Hotkeys_HotkeyList_ListView"].Add(
-            , hotkeyData.Action = 1 ? "Start" : "Stop"
+            , hotkeyData.Action = 1 ? "Start"
+                : hotkeyData.Action = 2 ? "Stop"
+                : hotkeyData.Action = 3 ? "Toggle"
+                : "Close"
             , hotkeyData.Scope = 1 ? "Yes" : "No"
             , hotkeyData.HotkeyText
         )
 
-        Hotkey hotkeyData.Hotkey, hotkeyData.Action = 1 ? Hotkey_start : Hotkey_stop
-            , are_hotkeys_active ? "On" : "Off"
+        #MaxThreadsPerHotkey 2 ; needed for Toggle Autoclicker to work
+        Hotkey hotkeyData.Hotkey, HotkeyEvent, are_hotkeys_active ? "On" : "Off"
+        #MaxThreadsPerHotkey
 
-        getHotkeyData(hotkey) {
+        HotkeyEvent(hotkey) {
+            local hotkeyData
             local hDat
             for hDat in configured_hotkeys {
-                if hDat.Hotkey = hotkey
-                    return hDat
+                if hDat.Hotkey = hotkey {
+                    hotkeyData := hDat
+                    break
+                }
             }
-        }
-        Hotkey_start(hotkey) {
-            static hotkeyData
-            if !IsSet(hotkeyData)
-                hotkeyData := getHotkeyData(hotkey)
+
             if hotkeyData.Scope = 2 && !WinActive("ahk_id " AutoclickerGui.Hwnd)
                 return
-            if !is_autoclicking
-                Start()
-        }
-        Hotkey_stop(hotkey) {
-            static hotkeyData
-            if !IsSet(hotkeyData)
-                hotkeyData := getHotkeyData(hotkey)
-            if hotkeyData.Scope = 2 && !WinActive("ahk_id " AutoclickerGui.Hwnd)
-                return
-            if is_autoclicking
-                Stop()
+    
+            switch hotkeyData.Action {
+                case 1:
+                    if !is_autoclicking
+                        Start()
+                case 2:
+                    if is_autoclicking
+                        Stop()
+                case 3:
+                    if is_autoclicking
+                        Stop()
+                    else
+                        Start()
+                case 4:
+                    Close()
+            }
         }
     }
 }
@@ -469,11 +478,13 @@ Hotkeys_AddHotkey(*) {
         KeyBinderGui.AddDropDownList "x54 yp w180 vHotkeyScopeDropDownList"
             , ["Globally", "Only when Autoclicker is focused"]
 
-        KeyBinderGui.AddGroupBox "xm w134 Section", "Action"
-        KeyBinderGui.AddRadio "xp+10 yp+20 vHotkeyActionRadio", "Start Autoclicker"
-        KeyBinderGui.AddRadio "xp", "Stop Autoclicker"
+        KeyBinderGui.AddGroupBox "xm w134 r4 Section", "Action"
+        KeyBinderGui.AddRadio "xp+10 yp+20 vHotkeyActionStartRadio", "Start Autoclicker"
+        KeyBinderGui.AddRadio "xp vHotkeyActionStopRadio", "Stop Autoclicker"
+        KeyBinderGui.AddRadio "xp vHotkeyActionToggleRadio", "Toggle Autoclicker"
+        KeyBinderGui.AddRadio "xp", "Close Autoclicker"
 
-        KeyBinderGui.AddButton("ys+6 w80 Default", "OK")
+        KeyBinderGui.AddButton("ys+43 w80 Default", "OK")
             .OnEvent("Click", Submit)
         KeyBinderGui.AddButton("xp wp", "Cancel")
             .OnEvent("Click", (*) => hideOwnedGui(KeyBinderGui))
@@ -483,7 +494,7 @@ Hotkeys_AddHotkey(*) {
 
     KeyBinderGui["Hotkey"].Value := "^F2"
     KeyBinderGui["HotkeyScopeDropDownList"].Choose(1)
-    KeyBinderGui["HotkeyActionRadio"].Value := 1
+    KeyBinderGui["HotkeyActionStartRadio"].Value := 1
     showGuiAtAutoclickerGuiPos KeyBinderGui
     KeyBinderGui["Hotkey"].Focus()
 
@@ -494,7 +505,7 @@ Hotkeys_AddHotkey(*) {
 
         local hotkeyData
         for hotkeyData in configured_hotkeys {
-            if KeyBinderGui["Hotkey"].Value = hotkeyData.Hotkey {
+            if "~" KeyBinderGui["Hotkey"].Value = hotkeyData.Hotkey {
                 if MsgBox("The hotkey '" hotkeyText "' is already in use. Would you like to overwrite it?"
                     , "Overwrite Hotkey", "YesNo Iconi 8192"
                 ) = "Yes"
@@ -509,7 +520,10 @@ Hotkeys_AddHotkey(*) {
             Hotkey: "~" KeyBinderGui["Hotkey"].Value,
             HotkeyText: hotkeyText,
             Scope: KeyBinderGui["HotkeyScopeDropDownList"].Value,
-            Action: KeyBinderGui["HotkeyActionRadio"].Value = 1 ? 1 : 2
+            Action: KeyBinderGui["HotkeyActionStartRadio"].Value = 1 ? 1
+                : KeyBinderGui["HotkeyActionStopRadio"].Value = 1 ? 2
+                : KeyBinderGui["HotkeyActionToggleRadio"].Value = 1 ? 3
+                : 4
         }
         add_log "Added hotkey: " hotkeyText
         Hotkeys_updateHotkeyBindings
@@ -776,7 +790,7 @@ ProfileManage(*) {
 
             RegCreateKey REG_KEY_PATH "\Profiles\" profileName
 
-            local e
+            local err
             try {
                 Loop Parse FileRead(fileLocation), "`n" {
                     if !A_LoopField
@@ -791,8 +805,8 @@ ProfileManage(*) {
                         RegWrite configMatch["Value"], configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
                         , REG_KEY_PATH "\Profiles\" profileName, configMatch["Name"]
                 }
-            } catch as e {
-                add_log "Import Profile error: " e.Message
+            } catch as err {
+                add_log "Import Profile error: " err.Message
                 try RegDeleteKey REG_KEY_PATH "\Profiles\" profileName
                 MsgBox Format("
                 (
@@ -800,7 +814,7 @@ An error occurred whilst importing the profile '{}' from {}.
 This is usually due to the file's data being corrupt or invalid.
 
 Message: {}
-)", profileName, fileLocation, e.Message), "Import Profile", "Iconx 8192"
+)", profileName, fileLocation, err.Message), "Import Profile", "Iconx 8192"
                 return
             }
 
@@ -823,6 +837,7 @@ ProfileLoad(profileName, *) {
 
             add_log "Configuration imported"
 
+            local err
             try {
                 local name, value
                 for name, value in currentConfig.OwnProps() {
@@ -861,15 +876,15 @@ ProfileLoad(profileName, *) {
                     }
                 }
                 add_log "Configuration GUI updated from profile"
-            } catch as e {
-                add_log "Load Profile error: " e.Message
+            } catch as err {
+                add_log "Load Profile error: " err.Message
                 MsgBox Format("
                 (
 An error occurred whilst loading the profile '{}'.
 This is likely due to corrupt data.
 
 Message: {}
-)", profileName, e.Message), "Load Profile", "Iconx 8192"
+)", profileName, err.Message), "Load Profile", "Iconx 8192"
             }
             return
         }
@@ -1045,7 +1060,7 @@ Start(*) {
                         add_log "Stopping automatically"
                         Stop
                         switch currentConfig.Scheduling_PostStopAction_DropDownList {
-                            case 2: ExitApp
+                            case 2: Close()
                             case 3:
                                 if WinExist("A")
                                     WinClose
@@ -1124,10 +1139,11 @@ Your current version is {}. Would you like to update now?
 
         add_log "Downloading file"
 
+        local err
         try Download "https://github.com/" GITHUB_REPO "/releases/latest/download/EC-Autoclicker.exe"
                 , downloadFilePath
-        catch as e
-            MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker.`n`nMessage: " e.Message
+        catch as err
+            MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker.`n`nMessage: " err.Message
                 , "Update", "Iconx 262144"
         else {
             add_log("File downloaded")
@@ -1136,7 +1152,7 @@ Your current version is {}. Would you like to update now?
                 . 'Rename-Item -LiteralPath "' downloadFilePath '" -NewName "' A_ScriptName '";'
                 . 'Start-Process -FilePath "' A_ScriptDir '\EC-Autoclicker.exe /updated"'
                 , , "Hide"
-            ExitApp
+            Close()
         }
     }
 }
@@ -1153,7 +1169,7 @@ OptionsMenu.Add
 OptionsMenu.Add SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault
 
 AutoclickerGui.Show "x0"
-add_log "Welcome to EC Autoclicker"
+add_log "Showed main GUI"
 
 if A_IsCompiled {
     if A_Args.Length > 0 && A_Args[1] = "/updated" {
