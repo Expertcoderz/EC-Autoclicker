@@ -7,6 +7,8 @@
 ;@Ahk2Exe-SetDescription EC Autoclicker
 ;@Ahk2Exe-SetVersion 1.1.5
 
+GITHUB_REPO := "Expertcoderz/EC-Autoclicker"
+
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
 RegCreateKey REG_KEY_PATH "\Profiles"
@@ -154,9 +156,9 @@ PersistentOptions := [
 
 HelpMenu := Menu()
 HelpMenu.Add SZ_TABLE.Menu_Help_OnlineHelp
-    , (*) => Run("https://github.com/Expertcoderz/EC-Autoclicker#readme")
+    , (*) => Run("https://github.com/" GITHUB_REPO "#readme")
 HelpMenu.Add SZ_TABLE.Menu_Help_Report
-    , (*) => Run("https://github.com/Expertcoderz/EC-Autoclicker/issues/new/choose")
+    , (*) => Run("https://github.com/" GITHUB_REPO "/issues/new/choose")
 HelpMenu.Add SZ_TABLE.Menu_Help_Update
     , (*) => CheckForUpdates(true)
 if !A_IsCompiled
@@ -749,7 +751,7 @@ ProfileManage(*) {
 
     ProfileImport(*) {
         local fileLocations := FileSelect("M",
-            , "Import Autoclicker Profile(s)", "Autoclicker Profiles (*.ac-profile)"
+            , "Import Autoclicker Profile(s)", "Autoclicker Profiles (*" FILE_EXT ")"
         )
         local fileLocation
         for fileLocation in fileLocations {
@@ -975,7 +977,7 @@ AboutOpen(*) {
         AboutGui.AddText "xp+50 yp", "EC Autoclicker version " (A_IsCompiled ? SubStr(FileGetVersion(A_ScriptFullPath), 1, -2) : "?")
         AboutGui.SetFont
         AboutGui.AddText "xp wp", "An open-source configurable autoclicking utility for Windows."
-        AboutGui.AddLink "xp", "<a href=`"https://github.com/Expertcoderz/EC-Autoclicker`">https://github.com/Expertcoderz/EC-Autoclicker</a>"
+        AboutGui.AddLink "xp", '<a href="https://github.com/' GITHUB_REPO '">https://github.com/' GITHUB_REPO "</a>"
 
         add_log "Created About GUI"
     }
@@ -1087,7 +1089,7 @@ Please connect to the internet and try again.
     add_log "Checking for updates"
 
     local oHttp := ComObject("WinHttp.Winhttprequest.5.1")
-    oHttp.open "GET", "https://api.github.com/repos/Expertcoderz/EC-Autoclicker/releases/latest"
+    oHttp.open "GET", "https://api.github.com/repos/" GITHUB_REPO "/releases/latest"
     oHttp.send
 
     local verNumMatch
@@ -1122,17 +1124,18 @@ Your current version is {}. Would you like to update now?
 
         add_log "Downloading file"
 
-        try Download "https://github.com/Expertcoderz/EC-Autoclicker/releases/latest/download/EC-Autoclicker.exe"
+        try Download "https://github.com/" GITHUB_REPO "/releases/latest/download/EC-Autoclicker.exe"
                 , downloadFilePath
         catch as e
             MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker.`n`nMessage: " e.Message
                 , "Update", "Iconx 262144"
         else {
             add_log("File downloaded")
-            Run "powershell -windowstyle Hidden -command start-sleep 1;"
-                . 'remove-item "' A_ScriptFullPath '";'
-                . 'rename-item "' downloadFilePath '" "' A_ScriptName '";'
-                . 'start-process "' A_ScriptDir '\EC-Autoclicker.exe /updated"', , "Hide"
+            Run "powershell.exe -WindowStyle Hidden -Command Start-Sleep -Seconds 1;"
+                . 'Remove-Item -LiteralPath "' A_ScriptFullPath '";'
+                . 'Rename-Item -LiteralPath "' downloadFilePath '" -NewName "' A_ScriptName '";'
+                . 'Start-Process -FilePath "' A_ScriptDir '\EC-Autoclicker.exe /updated"'
+                , , "Hide"
             ExitApp
         }
     }
