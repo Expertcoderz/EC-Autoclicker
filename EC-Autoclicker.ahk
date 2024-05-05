@@ -364,6 +364,15 @@ formatHotkeyText(hotkey) {
     return hotkey
 }
 
+assertProfileExists(profileName) {
+    Loop Reg REG_KEY_PATH "\Profiles", "K" {
+        if A_LoopRegName = profileName
+            return true
+    }
+    MsgBox "The profile '" profileName "' does not exist or has been deleted.", "Error", "Iconx 8192"
+    return false
+}
+
 General_ClickIntervalModeChanged(*) {
     local isRange := !AutoclickerGui["General_ClickIntervalMode_Radio"].Value
     AutoclickerGui["General_ClickIntervalRange_Text"].Visible := isRange
@@ -826,71 +835,63 @@ Message: {}
 }
 
 ProfileLoad(profileName, *) {
-    local currentConfig := {}
-
     add_log "Loading profile '" profileName "'"
 
-    Loop Reg REG_KEY_PATH "\Profiles", "K" {
-        if A_LoopRegName = profileName {
-            Loop Reg A_LoopRegKey "\" A_LoopRegName
-                currentConfig.%A_LoopRegName% := RegRead()
+    if !assertProfileExists(profileName) {
+        setupProfiles
+        return
+    }
 
-            add_log "Configuration imported"
-
-            local err
-            try {
-                local name, value
-                for name, value in currentConfig.OwnProps() {
-                    if name = "Hotkeys" {
-                        add_log "Update Hotkeys"
-                        Hotkeys_ClearAllHotkeys
-                        Loop Parse value, "`n" {
-                            if !A_LoopField
-                                continue
-                            local hotkeyDataMatch
-                            RegExMatch A_LoopField, "^(?P<Hotkey>.+?)%(?P<Scope>\d)%(?P<Action>\d)$", &hotkeyDataMatch
-                            configured_hotkeys.Push {
-                                Hotkey: hotkeyDataMatch["Hotkey"],
-                                HotkeyText: formatHotkeyText(hotkeyDataMatch["Hotkey"]),
-                                Scope: hotkeyDataMatch["Scope"],
-                                Action: hotkeyDataMatch["Action"]
-                            }
-                        }
-                        Hotkeys_updateHotkeyBindings
-                    } else {
-                        add_log "Update: " name " (value=" value ")"
-                        local ctrl := AutoclickerGui[name]
-                        if ctrl.Type = "Radio" {
-                            local radioInfo := RadioGroups.%name%
-                            radioInfo.Controls[value].Value := true
-                            if radioInfo.Callback
-                                radioInfo.Callback.Call radioInfo.Controls[value]
-                        } else {
-                            ctrl.Value := value
-                            if ctrl.Type = "Checkbox" {
-                                local checkableInfo := Checkables.%name%
-                                if checkableInfo.HasProp("Callback")
-                                    checkableInfo.Callback.Call ctrl
-                            }
-                        }
+    local err
+    try {
+        Loop Reg REG_KEY_PATH "\Profiles\" profileName {
+            local value := RegRead()
+            if A_LoopRegName = "Hotkeys" {
+                add_log "Update Hotkeys"
+                Hotkeys_ClearAllHotkeys
+                Loop Parse value, "`n" {
+                    if !A_LoopField
+                        continue
+                    local hotkeyDataMatch
+                    RegExMatch A_LoopField, "^(?P<Hotkey>.+?)%(?P<Scope>\d)%(?P<Action>\d)$", &hotkeyDataMatch
+                    configured_hotkeys.Push {
+                        Hotkey: hotkeyDataMatch["Hotkey"],
+                        HotkeyText: formatHotkeyText(hotkeyDataMatch["Hotkey"]),
+                        Scope: hotkeyDataMatch["Scope"],
+                        Action: hotkeyDataMatch["Action"]
                     }
                 }
-                add_log "Configuration GUI updated from profile"
-            } catch as err {
-                add_log "Load Profile error: " err.Message
-                MsgBox Format("
-                (
+                Hotkeys_updateHotkeyBindings
+            } else {
+                add_log "Update: " A_LoopRegName " (value=" value ")"
+                local ctrl := AutoclickerGui[A_LoopRegName]
+                if ctrl.Type = "Radio" {
+                    local radioInfo := RadioGroups.%A_LoopRegName%
+                    radioInfo.Controls[value].Value := true
+                    if radioInfo.Callback
+                        radioInfo.Callback.Call radioInfo.Controls[value]
+                } else {
+                    ctrl.Value := value
+                    if ctrl.Type = "Checkbox" {
+                        local checkableInfo := Checkables.%A_LoopRegName%
+                        if checkableInfo.HasProp("Callback")
+                            checkableInfo.Callback.Call ctrl
+                    }
+                }
+            }
+        }
+
+        add_log "Completed profile load"
+    } catch as err {
+        add_log "Load Profile error: " err.Message
+        MsgBox Format("
+(
 An error occurred whilst loading the profile '{}'.
 This is likely due to corrupt data.
 
 Message: {}
 )", profileName, err.Message), "Load Profile", "Iconx 8192"
-            }
-            return
-        }
     }
-    MsgBox "The profile '" profileName "' does not exist or has been deleted.", "Error", "Iconx 8192"
-    setupProfiles
 }
 
 LogsOpen(*) {
@@ -1167,6 +1168,22 @@ for optionInfo in PersistentOptions {
 }
 OptionsMenu.Add
 OptionsMenu.Add SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault
+
+if A_Args.Length > 0 && A_Args[1] = "/profile" {
+    add_log "Detected /profile switch"
+
+    if A_Args.Length < 2 {
+        MsgBox "A profile name must be specified.", "Error", "Iconx 262144"
+        ExitApp
+    }
+
+    if !assertProfileExists(A_Args[2])
+        ExitApp
+ 
+    ProfileLoad(A_Args[2])
+    Start()
+    Close()
+}
 
 AutoclickerGui.Show "x0"
 add_log "Showed main GUI"
