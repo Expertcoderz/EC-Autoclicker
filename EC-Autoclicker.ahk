@@ -73,14 +73,14 @@ makeRadioGroup(name, radioControls, changedCallback := 0) {
     if changedCallback {
         local ctrl
         for ctrl in radioControls
-            ctrl.OnEvent "Click", changedCallback
+            ctrl.OnEvent("Click", changedCallback)
     }
 }
 makeCheckable(name, checkbox, callback := 0, controls := []) {
     checkbox.Name := name
     Checkables.%name% := { Checkbox: checkbox, Callback: callback }
     if callback = 1 {
-        checkbox.OnEvent "Click", Toggle
+        checkbox.OnEvent("Click", Toggle)
         Toggle(*) {
             local ctrl
             for ctrl in controls
@@ -88,34 +88,36 @@ makeCheckable(name, checkbox, callback := 0, controls := []) {
         }
         Checkables.%name%.Callback := Toggle
     } else if callback
-        checkbox.OnEvent "Click", callback
+        checkbox.OnEvent("Click", callback)
 }
 
 AutoclickerGui := Gui("+AlwaysOnTop", "EC Autoclicker")
-AutoclickerGui.OnEvent "Close", Close
+AutoclickerGui.OnEvent("Close", Close)
 
 FileMenu := Menu()
-FileMenu.Add SZ_TABLE.Menu_File_RunAsAdmin, (*) =>
-        Run('*RunAs "' (A_IsCompiled ? A_ScriptFullPath '" /restart' : A_AhkPath '" /restart "' A_ScriptFullPath '"'))
-FileMenu.SetIcon SZ_TABLE.Menu_File_RunAsAdmin, "imageres.dll", -78
+FileMenu.Add(
+    SZ_TABLE.Menu_File_RunAsAdmin
+    , (*) => Run('*RunAs "' (A_IsCompiled ? A_ScriptFullPath '" /restart' : A_AhkPath '" /restart "' A_ScriptFullPath '"'))
+)
+FileMenu.SetIcon(SZ_TABLE.Menu_File_RunAsAdmin, "imageres.dll", -78)
 if A_IsAdmin {
-    FileMenu.Disable SZ_TABLE.Menu_File_RunAsAdmin
-    FileMenu.Rename SZ_TABLE.Menu_File_RunAsAdmin, "Running as administrator"
+    FileMenu.Disable(SZ_TABLE.Menu_File_RunAsAdmin)
+    FileMenu.Rename(SZ_TABLE.Menu_File_RunAsAdmin, "Running as administrator")
 }
-FileMenu.Add SZ_TABLE.Menu_File_Logs, LogsOpen
-FileMenu.Add SZ_TABLE.Menu_File_Exit, Close
+FileMenu.Add(SZ_TABLE.Menu_File_Logs, LogsOpen)
+FileMenu.Add(SZ_TABLE.Menu_File_Exit, Close)
 
 ProfilesMenu := Menu()
 setupProfiles() {
-    ProfilesMenu.Delete
-    ProfilesMenu.Add SZ_TABLE.Menu_Profiles_Create, ProfileCreate
-    ProfilesMenu.Add SZ_TABLE.Menu_Profiles_Manage, ProfileManage
-    ProfilesMenu.Add
+    ProfilesMenu.Delete()
+    ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Create, ProfileCreate)
+    ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Manage, ProfileManage)
+    ProfilesMenu.Add()
 
     Loop Reg REG_KEY_PATH "\Profiles", "K"
-        ProfilesMenu.Add A_LoopRegName, ProfileLoad
+        ProfilesMenu.Add(A_LoopRegName, ProfileLoad)
 
-    add_log "Loaded profiles"
+    add_log("Loaded profiles")
 }
 setupProfiles()
 
@@ -155,120 +157,148 @@ PersistentOptions := [
 ]
 
 HelpMenu := Menu()
-HelpMenu.Add SZ_TABLE.Menu_Help_OnlineHelp
+HelpMenu.Add(
+    SZ_TABLE.Menu_Help_OnlineHelp
     , (*) => Run("https://github.com/" GITHUB_REPO "#readme")
-HelpMenu.Add SZ_TABLE.Menu_Help_Report
+)
+HelpMenu.Add(
+    SZ_TABLE.Menu_Help_Report
     , (*) => Run("https://github.com/" GITHUB_REPO "/issues/new/choose")
-HelpMenu.Add SZ_TABLE.Menu_Help_Update
+)
+HelpMenu.Add(
+    SZ_TABLE.Menu_Help_Update
     , (*) => CheckForUpdates(true)
+)
 if !A_IsCompiled
-    HelpMenu.Disable SZ_TABLE.Menu_Help_Update
-HelpMenu.Add
-HelpMenu.Add SZ_TABLE.Menu_Help_About, AboutOpen
+    HelpMenu.Disable(SZ_TABLE.Menu_Help_Update)
+HelpMenu.Add()
+HelpMenu.Add(SZ_TABLE.Menu_Help_About, AboutOpen)
 
 Menus := MenuBar()
-Menus.Add SZ_TABLE.Menu_File, FileMenu
-Menus.Add SZ_TABLE.Menu_Profiles, ProfilesMenu
-Menus.Add SZ_TABLE.Menu_Options, OptionsMenu
-Menus.Add SZ_TABLE.Menu_Help, HelpMenu
+Menus.Add(SZ_TABLE.Menu_File, FileMenu)
+Menus.Add(SZ_TABLE.Menu_Profiles, ProfilesMenu)
+Menus.Add(SZ_TABLE.Menu_Options, OptionsMenu)
+Menus.Add(SZ_TABLE.Menu_Help, HelpMenu)
 AutoclickerGui.MenuBar := Menus
 
-AutoclickerGui.AddTab3 "w250 h208 vTab", [
+AutoclickerGui.AddTab3("w250 h208 vTab", [
     SZ_TABLE.Tabs.General,
     SZ_TABLE.Tabs.Scheduling,
     SZ_TABLE.Tabs.Positioning,
     SZ_TABLE.Tabs.Hotkeys
-]
+])
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.General)
 
-AutoclickerGui.AddGroupBox "w226 h70 Section", "Mouse button"
+AutoclickerGui.AddGroupBox("w226 h70 Section", "Mouse button")
 
-makeRadioGroup "General_MouseButton_Radio", [
+makeRadioGroup("General_MouseButton_Radio", [
     AutoclickerGui.AddRadio("xs+10 yp+20 Checked", "&Left"),
     AutoclickerGui.AddRadio("yp", "&Right"),
     AutoclickerGui.AddRadio("yp", "&Middle")
-]
+])
 
-AutoclickerGui.AddDropDownList "xs+10 yp+20 w100 vGeneral_ClickCount_DropDownList AltSubmit Choose1", [
+AutoclickerGui.AddDropDownList("xs+10 yp+20 w100 vGeneral_ClickCount_DropDownList AltSubmit Choose1", [
     "Single click",
     "Double click",
     "Triple click",
     "No click"
-]
+])
 
-AutoclickerGui.AddGroupBox "xs w226 h73 Section", "Click intervals"
+AutoclickerGui.AddGroupBox("xs w226 h73 Section", "Click intervals")
 
-makeRadioGroup "General_ClickIntervalMode_Radio", [
-    AutoclickerGui.AddRadio("xs+10 yp+20 Checked", "F&ixed"),
-    AutoclickerGui.AddRadio("yp", "R&andomized")
-], General_ClickIntervalModeChanged
+makeRadioGroup(
+    "General_ClickIntervalMode_Radio"
+    , [
+        AutoclickerGui.AddRadio("xs+10 yp+20 Checked", "F&ixed"),
+        AutoclickerGui.AddRadio("yp", "R&andomized")
+    ]
+    , General_ClickIntervalModeChanged
+)
 
-AutoclickerGui.AddEdit "xs+10 yp+20 w50 vGeneral_ClickIntervalLower_NumEdit Limit Number", "100"
-AutoclickerGui.AddText "xp+54 yp+2", "ms"
-AutoclickerGui.AddText "xp+24 yp vGeneral_ClickIntervalRange_Text Hidden", "to"
-AutoclickerGui.AddEdit "xp+18 yp-2 w50 vGeneral_ClickIntervalUpper_NumEdit Hidden Limit Number", "200"
-AutoclickerGui.AddText "xp+54 yp+2 vGeneral_ClickIntervalUpper_UnitText Hidden", "ms"
+AutoclickerGui.AddEdit("xs+10 yp+20 w50 vGeneral_ClickIntervalLower_NumEdit Limit Number", "100")
+AutoclickerGui.AddText("xp+54 yp+2", "ms")
+AutoclickerGui.AddText("xp+24 yp vGeneral_ClickIntervalRange_Text Hidden", "to")
+AutoclickerGui.AddEdit("xp+18 yp-2 w50 vGeneral_ClickIntervalUpper_NumEdit Hidden Limit Number", "200")
+AutoclickerGui.AddText("xp+54 yp+2 vGeneral_ClickIntervalUpper_UnitText Hidden", "ms")
 
-makeCheckable "General_SoundBeep_Checkbox", AutoclickerGui.AddCheckbox("xs", "Play a &beep at")
+makeCheckable(
+    "General_SoundBeep_Checkbox"
+    , AutoclickerGui.AddCheckbox("xs", "Play a &beep at")
     , 1
     , [AutoclickerGui.AddEdit("xp+88 yp-2 w36 vGeneral_SoundBeep_NumEdit Disabled Limit Number", "600")]
-
-AutoclickerGui.AddText "xp+40 yp+2", "Hz at every click"
+)
+AutoclickerGui.AddText("xp+40 yp+2", "Hz at every click")
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Scheduling)
 
-makeCheckable "Scheduling_PreStartDelay_Checkbox", AutoclickerGui.AddCheckbox("Section", "&Delay before starting:")
+makeCheckable(
+    "Scheduling_PreStartDelay_Checkbox"
+    , AutoclickerGui.AddCheckbox("Section", "&Delay before starting:")
     , 1
     , [AutoclickerGui.AddEdit("xp+122 yp-2 w50 vScheduling_PreStartDelay_NumEdit Disabled Limit Number", "0")]
+)
+AutoclickerGui.AddText("xp+54 ys vScheduling_PreStartDelay_UnitText", "ms")
 
-AutoclickerGui.AddText "xp+54 ys vScheduling_PreStartDelay_UnitText", "ms"
+AutoclickerGui.AddGroupBox("xs ys+25 w226 h148 Section", "Stop after")
 
-AutoclickerGui.AddGroupBox "xs ys+25 w226 h148 Section", "Stop after"
-
-makeCheckable "Scheduling_StopAfterNumClicks_Checkbox", AutoclickerGui.AddCheckbox("xs+10 yp+20", "&Number of clicks:")
+makeCheckable(
+    "Scheduling_StopAfterNumClicks_Checkbox"
+    , AutoclickerGui.AddCheckbox("xs+10 yp+20", "&Number of clicks:")
     , Scheduling_StopAfterNumClicksToggled
+)
+AutoclickerGui.AddEdit("xp+104 yp-2 w45 vScheduling_StopAfterNumClicks_NumEdit Disabled Limit Number", "50")
 
-AutoclickerGui.AddEdit "xp+104 yp-2 w45 vScheduling_StopAfterNumClicks_NumEdit Disabled Limit Number", "50"
-
-makeCheckable "Scheduling_StopAfterDuration_Checkbox", AutoclickerGui.AddCheckbox("xs+10 yp+25", "D&uration:")
+makeCheckable(
+    "Scheduling_StopAfterDuration_Checkbox"
+    , AutoclickerGui.AddCheckbox("xs+10 yp+25", "D&uration:")
     , Scheduling_StopAfterDurationToggled
+)
+AutoclickerGui.AddEdit("xp+65 yp-2 w45 vScheduling_StopAfterDuration_NumEdit Disabled Limit Number", "60")
+AutoclickerGui.AddText("xp+48 yp+2 vScheduling_StopAfterDuration_UnitText Disabled", "ms")
 
-AutoclickerGui.AddEdit "xp+65 yp-2 w45 vScheduling_StopAfterDuration_NumEdit Disabled Limit Number", "60"
-AutoclickerGui.AddText "xp+48 yp+2 vScheduling_StopAfterDuration_UnitText Disabled", "ms"
-
-makeCheckable "Scheduling_StopAfterTime_Checkbox", AutoclickerGui.AddCheckbox("xs+10 yp+25", "&Time:")
+makeCheckable(
+    "Scheduling_StopAfterTime_Checkbox"
+    , AutoclickerGui.AddCheckbox("xs+10 yp+25", "&Time:")
     , Scheduling_StopAfterTimeToggled
+)
+AutoclickerGui.AddDateTime("xp+48 yp-2 w100 vScheduling_StopAfterTime_DateTime Disabled", "Time")
 
-AutoclickerGui.AddDateTime "xp+48 yp-2 w100 vScheduling_StopAfterTime_DateTime Disabled", "Time"
-
-AutoclickerGui.AddDropDownList "xs+10 yp+26 w206 vScheduling_StopAfterMode_DropDownList AltSubmit Choose1 Disabled", [
+AutoclickerGui.AddDropDownList("xs+10 yp+26 w206 vScheduling_StopAfterMode_DropDownList AltSubmit Choose1 Disabled", [
     "Whichever comes first",
     "Whichever comes last"
-]
+])
 
-AutoclickerGui.AddText "xs+10 ys+120 vScheduling_PostStopAction_Text Disabled", "&When done:"
-AutoclickerGui.AddDropDownList "xp+62 yp-2 w140 vScheduling_PostStopAction_DropDownList AltSubmit Choose1 Disabled", [
+AutoclickerGui.AddText("xs+10 ys+120 vScheduling_PostStopAction_Text Disabled", "&When done:")
+AutoclickerGui.AddDropDownList("xp+62 yp-2 w140 vScheduling_PostStopAction_DropDownList AltSubmit Choose1 Disabled", [
     "Do nothing",
     "Quit autoclicker",
     "Close focused window",
     "Logoff"
-]
+])
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Positioning)
 
-AutoclickerGui.AddGroupBox "w226 h45 Section", "Boundary"
-makeRadioGroup "Positioning_BoundaryMode_Radio", [
-    AutoclickerGui.AddRadio("xs+10 yp+20 v Checked", SZ_TABLE.Positioning_Boundary_Mode.None),
-    AutoclickerGui.AddRadio("yp", SZ_TABLE.Positioning_Boundary_Mode.Point),
-    AutoclickerGui.AddRadio("yp", SZ_TABLE.Positioning_Boundary_Mode.Box)
-], Positioning_ChangedModeSelection
+AutoclickerGui.AddGroupBox("w226 h45 Section", "Boundary")
+makeRadioGroup(
+    "Positioning_BoundaryMode_Radio"
+    , [
+        AutoclickerGui.AddRadio("xs+10 yp+20 v Checked", SZ_TABLE.Positioning_Boundary_Mode.None),
+        AutoclickerGui.AddRadio("yp", SZ_TABLE.Positioning_Boundary_Mode.Point),
+        AutoclickerGui.AddRadio("yp", SZ_TABLE.Positioning_Boundary_Mode.Box)
+    ]
+    , Positioning_ChangedModeSelection
+)
 
-PerBoundaryConfigControls := { %SZ_TABLE.Positioning_Boundary_Mode.None%: [], %SZ_TABLE.Positioning_Boundary_Mode.Point%: [
-    AutoclickerGui.AddText("xs+10 ys+55 Hidden", "X:"),
-    AutoclickerGui.AddEdit("xp+20 yp-2 w30 vPositioning_XPos_NumEdit Limit Number Hidden", "0"),
-    AutoclickerGui.AddText("xp+45 yp+2 Hidden", "Y:"),
-    AutoclickerGui.AddEdit("xp+20 yp-2 w30 vPositioning_YPos_NumEdit Limit Number Hidden", "0")], %SZ_TABLE.Positioning_Boundary_Mode.Box%: [
+PerBoundaryConfigControls := {
+    %SZ_TABLE.Positioning_Boundary_Mode.None%: [],
+    %SZ_TABLE.Positioning_Boundary_Mode.Point%: [
+        AutoclickerGui.AddText("xs+10 ys+55 Hidden", "X:"),
+        AutoclickerGui.AddEdit("xp+20 yp-2 w30 vPositioning_XPos_NumEdit Limit Number Hidden", "0"),
+        AutoclickerGui.AddText("xp+45 yp+2 Hidden", "Y:"),
+        AutoclickerGui.AddEdit("xp+20 yp-2 w30 vPositioning_YPos_NumEdit Limit Number Hidden", "0")
+    ],
+    %SZ_TABLE.Positioning_Boundary_Mode.Box%: [
         AutoclickerGui.AddText("xs+10 ys+55 Hidden", "X min:"),
         AutoclickerGui.AddEdit("xp+35 yp-2 w30 vPositioning_XMinPos_NumEdit Limit Number Hidden", "0"),
         AutoclickerGui.AddText("xp+45 yp+2 Hidden", "X max:"),
@@ -280,11 +310,14 @@ PerBoundaryConfigControls := { %SZ_TABLE.Positioning_Boundary_Mode.None%: [], %S
     ]
 }
 
-AutoclickerGui.AddGroupBox "xs yp+44 w226 h45 Section", "Mouse position relative to"
-makeRadioGroup "Positioning_RelativeTo_Radio", [
-    AutoclickerGui.AddRadio("xs+10 yp+20 vPositioning_RelativeTo_Radio Checked", "Entire &screen"),
-    AutoclickerGui.AddRadio("yp", "Focused &window")
-]
+AutoclickerGui.AddGroupBox("xs yp+44 w226 h45 Section", "Mouse position relative to")
+makeRadioGroup(
+    "Positioning_RelativeTo_Radio"
+    , [
+        AutoclickerGui.AddRadio("xs+10 yp+20 vPositioning_RelativeTo_Radio Checked", "Entire &screen"),
+        AutoclickerGui.AddRadio("yp", "Focused &window")
+    ]
+)
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Hotkeys)
 
@@ -308,45 +341,50 @@ AutoclickerGui.AddButton("xm w121 vStartButton Default", "START")
 AutoclickerGui.AddButton("yp wp vStopButton Disabled", "STOP")
     .OnEvent("Click", Stop)
 
-AutoclickerGui.AddStatusBar "vStatusBar"
+AutoclickerGui.AddStatusBar("vStatusBar")
 AutoclickerGui["StatusBar"].SetParts(84, 100)
 AutoclickerGui["StatusBar"].SetText(" Clicks: 0")
-AutoclickerGui["StatusBar"].SetText("Elapsed: 0.0 s", 2)
+AutoclickerGui["StatusBar"].SetText("Elapsed: 0.0", 2)
 AutoclickerGui["StatusBar"].SetText("X=? Y=?", 3, 2)
 
 add_log(text) {
     OutputDebug text
     global program_logs
-    program_logs.Push { Timestamp: A_Now, Message: text }
+    program_logs.Push({ Timestamp: A_Now, Message: text })
     if program_logs.Length > 100
-        program_logs.RemoveAt 1
+        program_logs.RemoveAt(1)
 }
 
 showGuiAtAutoclickerGuiPos(gui) {
     local posX, posY
-    AutoclickerGui.GetPos &posX, &posY
-    gui.Opt (always_on_top ? "+" : "-") "AlwaysOnTop"
-    gui.Show "x" posX " y" posY
+    AutoclickerGui.GetPos(&posX, &posY)
+    gui.Opt((always_on_top ? "+" : "-") "AlwaysOnTop")
+    gui.Show("x" posX " y" posY)
 }
 
 hideOwnedGui(gui, *) {
-    gui.Hide
-    AutoclickerGui.Opt "-Disabled"
+    gui.Hide()
+    AutoclickerGui.Opt("-Disabled")
     WinActivate "ahk_id " AutoclickerGui.Hwnd
 }
 
 validateProfileNameInput(profileName) {
-    if RegExReplace(profileName, "\s") = ""
+    if RegExReplace(profileName, "\s") = "" ; blank input
         return false
+
     if profileName ~= "[\\/:\*\?`"<>\|]" {
-        MsgBox "A profile name can't contain any of the following characters:`n\ / : * ? `" < > |", "Create/Update Profile", "Iconx 8192"
+        MsgBox "A profile name can't contain any of the following characters:`n\ / : * ? `" < > |"
+            , "Create/Update Profile"
+            , "Iconx 8192"
         return false
     }
+
     Loop Reg REG_KEY_PATH "\Profiles", "K" {
         if A_LoopRegName = profileName {
             if MsgBox(
                 "A profile similarly named '" A_LoopRegName "' already exists. Would you like to overwrite it?"
-                , "Overwrite Profile", "YesNo Iconi 8192"
+                , "Overwrite Profile"
+                , "YesNo Iconi 8192"
             ) = "Yes" {
                 RegDeleteKey A_LoopRegKey "\" A_LoopRegName
                 return true
@@ -354,6 +392,7 @@ validateProfileNameInput(profileName) {
                 return false
         }
     }
+
     return true
 }
 
@@ -398,18 +437,18 @@ Scheduling_updateStopAfter() {
 
 Scheduling_StopAfterNumClicksToggled(*) {
     AutoclickerGui["Scheduling_StopAfterNumClicks_NumEdit"].Enabled := AutoclickerGui["Scheduling_StopAfterNumClicks_Checkbox"].Value
-    Scheduling_updateStopAfter
+    Scheduling_updateStopAfter()
 }
 
 Scheduling_StopAfterDurationToggled(*) {
     AutoclickerGui["Scheduling_StopAfterDuration_NumEdit"].Enabled := AutoclickerGui["Scheduling_StopAfterDuration_Checkbox"].Value
     AutoclickerGui["Scheduling_StopAfterDuration_UnitText"].Enabled := AutoclickerGui["Scheduling_StopAfterDuration_Checkbox"].Value
-    Scheduling_updateStopAfter
+    Scheduling_updateStopAfter()
 }
 
 Scheduling_StopAfterTimeToggled(*) {
     AutoclickerGui["Scheduling_StopAfterTime_DateTime"].Enabled := AutoclickerGui["Scheduling_StopAfterTime_Checkbox"].Value
-    Scheduling_updateStopAfter
+    Scheduling_updateStopAfter()
 }
 
 Positioning_ChangedModeSelection(radio, *) {
@@ -477,48 +516,52 @@ Hotkeys_AddHotkey(*) {
     static KeyBinderGui
     if !IsSet(KeyBinderGui) {
         KeyBinderGui := Gui("-SysMenu +Owner" AutoclickerGui.Hwnd, "Add Hotkey")
-        KeyBinderGui.OnEvent "Escape", hideOwnedGui
-        KeyBinderGui.OnEvent "Close", hideOwnedGui
+        KeyBinderGui.OnEvent("Escape", hideOwnedGui)
+        KeyBinderGui.OnEvent("Close", hideOwnedGui)
 
-        KeyBinderGui.AddText , "Hotkey:"
-        KeyBinderGui.AddHotkey "x54 yp w180 vHotkey"
+        KeyBinderGui.AddText(, "Hotkey:")
+        KeyBinderGui.AddHotkey("x54 yp w180 vHotkey")
 
-        KeyBinderGui.AddText "xm", "Applies:"
-        KeyBinderGui.AddDropDownList "x54 yp w180 vHotkeyScopeDropDownList"
+        KeyBinderGui.AddText("xm", "Applies:")
+        KeyBinderGui.AddDropDownList(
+            "x54 yp w180 vHotkeyScopeDropDownList"
             , ["Globally", "Only when Autoclicker is focused"]
+        )
 
-        KeyBinderGui.AddGroupBox "xm w134 r4 Section", "Action"
-        KeyBinderGui.AddRadio "xp+10 yp+20 vHotkeyActionStartRadio", "Start Autoclicker"
-        KeyBinderGui.AddRadio "xp vHotkeyActionStopRadio", "Stop Autoclicker"
-        KeyBinderGui.AddRadio "xp vHotkeyActionToggleRadio", "Toggle Autoclicker"
-        KeyBinderGui.AddRadio "xp", "Close Autoclicker"
+        KeyBinderGui.AddGroupBox("xm w134 r4 Section", "Action")
+        KeyBinderGui.AddRadio("xp+10 yp+20 vHotkeyActionStartRadio", "Start Autoclicker")
+        KeyBinderGui.AddRadio("xp vHotkeyActionStopRadio", "Stop Autoclicker")
+        KeyBinderGui.AddRadio("xp vHotkeyActionToggleRadio", "Toggle Autoclicker")
+        KeyBinderGui.AddRadio("xp", "Close Autoclicker")
 
         KeyBinderGui.AddButton("ys+43 w80 Default", "OK")
             .OnEvent("Click", Submit)
         KeyBinderGui.AddButton("xp wp", "Cancel")
             .OnEvent("Click", (*) => hideOwnedGui(KeyBinderGui))
 
-        add_log "Created hotkey binder GUI"
+        add_log("Created hotkey binder GUI")
     }
 
     KeyBinderGui["Hotkey"].Value := "^F2"
     KeyBinderGui["HotkeyScopeDropDownList"].Choose(1)
     KeyBinderGui["HotkeyActionStartRadio"].Value := 1
-    showGuiAtAutoclickerGuiPos KeyBinderGui
+    showGuiAtAutoclickerGuiPos(KeyBinderGui)
     KeyBinderGui["Hotkey"].Focus()
 
     Submit(*) {
-        hideOwnedGui KeyBinderGui
+        hideOwnedGui(KeyBinderGui)
 
         local hotkeyText := formatHotkeyText(KeyBinderGui["Hotkey"].Value)
 
         local hotkeyData
         for hotkeyData in configured_hotkeys {
             if "~" KeyBinderGui["Hotkey"].Value = hotkeyData.Hotkey {
-                if MsgBox("The hotkey '" hotkeyText "' is already in use. Would you like to overwrite it?"
-                    , "Overwrite Hotkey", "YesNo Iconi 8192"
+                if MsgBox(
+                    "The hotkey '" hotkeyText "' is already in use. Would you like to overwrite it?"
+                    , "Overwrite Hotkey"
+                    , "YesNo Iconi 8192"
                 ) = "Yes"
-                    configured_hotkeys.RemoveAt A_Index
+                    configured_hotkeys.RemoveAt(A_Index)
                 else
                     return
                 break
@@ -534,8 +577,8 @@ Hotkeys_AddHotkey(*) {
                 : KeyBinderGui["HotkeyActionToggleRadio"].Value = 1 ? 3
                 : 4
         }
-        add_log "Added hotkey: " hotkeyText
-        Hotkeys_updateHotkeyBindings
+        add_log("Added hotkey: " hotkeyText)
+        Hotkeys_updateHotkeyBindings()
     }
 }
 
@@ -545,61 +588,65 @@ Hotkeys_RemoveHotkey(*) {
         rowNum := AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetNext(rowNum)
         if !rowNum
             break
+
         local hotkeyData
         for hotkeyData in configured_hotkeys {
             if hotkeyData.HotkeyText = AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetText(rowNum, 3) {
-                configured_hotkeys.RemoveAt A_Index
+                configured_hotkeys.RemoveAt(A_Index)
                 Hotkey hotkeyData.Hotkey, "Off"
-                add_log "Removed hotkey: " hotkeyData.HotkeyText
+                add_log("Removed hotkey: " hotkeyData.HotkeyText)
                 break
             }
         }
     }
-    Hotkeys_updateHotkeyBindings
-    Hotkeys_ItemSelectionChanged
+
+    Hotkeys_updateHotkeyBindings()
+    Hotkeys_ItemSelectionChanged()
 }
 
 Hotkeys_ClearAllHotkeys(*) {
     local hotkeyData
     for hotkeyData in configured_hotkeys {
-        configured_hotkeys.Delete A_Index
+        configured_hotkeys.Delete(A_Index)
         Hotkey hotkeyData.Hotkey, "Off"
-        add_log "Removed hotkey: " hotkeyData.HotkeyText
+        add_log("Removed hotkey: " hotkeyData.HotkeyText)
     }
     configured_hotkeys.Length := 0
-    Hotkeys_updateHotkeyBindings
+    Hotkeys_updateHotkeyBindings()
 }
 
 ProfileCreate(*) {
     static ProfileNamePromptGui
     if !IsSet(ProfileNamePromptGui) {
         ProfileNamePromptGui := Gui("-SysMenu +Owner" AutoclickerGui.Hwnd, "Create/Update Profile")
-        ProfileNamePromptGui.OnEvent "Escape", hideOwnedGui
-        ProfileNamePromptGui.OnEvent "Close", hideOwnedGui
+        ProfileNamePromptGui.OnEvent("Escape", hideOwnedGui)
+        ProfileNamePromptGui.OnEvent("Close", hideOwnedGui)
 
-        ProfileNamePromptGui.AddText "w206 r2"
+        ProfileNamePromptGui.AddText(
+            "w206 r2"
             , "The current autoclicker configuration will`nbe saved with the following profile name:"
-        ProfileNamePromptGui.AddEdit "wp vProfileNameEdit"
+        )
+        ProfileNamePromptGui.AddEdit("wp vProfileNameEdit")
 
         ProfileNamePromptGui.AddButton("w100 Default", "OK")
             .OnEvent("Click", SubmitPrompt)
         ProfileNamePromptGui.AddButton("yp wp", "Cancel")
             .OnEvent("Click", (*) => hideOwnedGui(ProfileNamePromptGui))
 
-        add_log "Created profile name prompt GUI"
+        add_log("Created profile name prompt GUI")
     }
 
     ProfileNamePromptGui["ProfileNameEdit"].Value := ""
-    ProfileNamePromptGui.Opt "-Disabled"
-    AutoclickerGui.Opt "+Disabled"
-    showGuiAtAutoclickerGuiPos ProfileNamePromptGui
+    ProfileNamePromptGui.Opt("-Disabled")
+    AutoclickerGui.Opt("+Disabled")
+    showGuiAtAutoclickerGuiPos(ProfileNamePromptGui)
 
     SubmitPrompt(*) {
         local profileName := ProfileNamePromptGui["ProfileNameEdit"].Value
         if !validateProfileNameInput(profileName)
             return
 
-        add_log "Reading configuration data"
+        add_log("Reading configuration data")
 
         local currentConfig := AutoclickerGui.Submit(false)
 
@@ -609,19 +656,25 @@ ProfileCreate(*) {
         for ctrlName, value in currentConfig.OwnProps() {
             if !InStr(ctrlName, "_")
                 continue
-            RegWrite value, ctrlName ~= "DateTime" ? "REG_SZ" : "REG_DWORD", REG_KEY_PATH "\Profiles\" profileName, ctrlName
+            RegWrite value
+                , ctrlName ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
+                , REG_KEY_PATH "\Profiles\" profileName
+                , ctrlName
         }
 
         local serializedHotkeys := ""
         local hotkeyData
         for hotkeyData in configured_hotkeys
             serializedHotkeys .= hotkeyData.Hotkey "%" hotkeyData.Scope "%" hotkeyData.Action "`n"
-        RegWrite serializedHotkeys, "REG_MULTI_SZ", REG_KEY_PATH "\Profiles\" profileName, "Hotkeys"
+        RegWrite serializedHotkeys
+            , "REG_MULTI_SZ"
+            , REG_KEY_PATH "\Profiles\" profileName
+            , "Hotkeys"
 
-        add_log "Wrote configuration data to registry"
+        add_log("Wrote configuration data to registry")
 
-        setupProfiles
-        hideOwnedGui ProfileNamePromptGui
+        setupProfiles()
+        hideOwnedGui(ProfileNamePromptGui)
     }
 }
 
@@ -629,8 +682,8 @@ ProfileManage(*) {
     static ProfilesGui
     if !IsSet(ProfilesGui) {
         ProfilesGui := Gui("-MinimizeBox +Owner" AutoclickerGui.Hwnd, "Autoclicker Profiles")
-        ProfilesGui.OnEvent "Escape", hideOwnedGui
-        ProfilesGui.OnEvent "Close", hideOwnedGui
+        ProfilesGui.OnEvent("Escape", hideOwnedGui)
+        ProfilesGui.OnEvent("Close", hideOwnedGui)
 
         ProfilesGui.AddListView("w150 r10 vProfileList -Hdr -Multi +Sort", ["Profile Name"])
             .OnEvent("ItemSelect", ProfileListSelectionChanged)
@@ -646,15 +699,16 @@ ProfileManage(*) {
             .OnEvent("Click", (*) => hideOwnedGui(ProfilesGui))
     }
 
-    refreshProfileList
-    showGuiAtAutoclickerGuiPos ProfilesGui
+    refreshProfileList()
+    showGuiAtAutoclickerGuiPos(ProfilesGui)
 
     refreshProfileList(selectProfileName := "") {
         ProfilesGui["ProfileList"].Delete()
         Loop Reg REG_KEY_PATH "\Profiles", "K"
             ProfilesGui["ProfileList"].Add(A_LoopRegName = selectProfileName ? "+Focus +Select" : "", A_LoopRegName)
-        ProfileListSelectionChanged
-        setupProfiles
+
+        ProfileListSelectionChanged()
+        setupProfiles()
     }
 
     ProfileListSelectionChanged(*) {
@@ -668,13 +722,13 @@ ProfileManage(*) {
         Loop Reg REG_KEY_PATH "\Profiles", "K" {
             if A_LoopRegName = selectedProfileName {
                 RegDeleteKey
-                add_log "Deleted profile '" selectedProfileName "'"
-                refreshProfileList
+                add_log("Deleted profile '" selectedProfileName "'")
+                refreshProfileList()
                 return
             }
         }
         MsgBox "The profile '" selectedProfileName "' does not exist or has already been deleted.", "Error", "Iconx 8192"
-        refreshProfileList
+        refreshProfileList()
     }
 
     ProfileRename(*) {
@@ -683,32 +737,32 @@ ProfileManage(*) {
         static ProfileRenamePromptGui
         if !IsSet(ProfileRenamePromptGui) {
             ProfileRenamePromptGui := Gui("-SysMenu +Owner" ProfilesGui.Hwnd, "Rename Profile")
-            ProfileRenamePromptGui.OnEvent "Escape", CancelPrompt
-            ProfileRenamePromptGui.OnEvent "Close", CancelPrompt
+            ProfileRenamePromptGui.OnEvent("Escape", CancelPrompt)
+            ProfileRenamePromptGui.OnEvent("Close", CancelPrompt)
 
-            ProfileRenamePromptGui.AddText "w206 vPromptText"
-            ProfileRenamePromptGui.AddEdit "wp vProfileNameEdit"
+            ProfileRenamePromptGui.AddText("w206 vPromptText")
+            ProfileRenamePromptGui.AddEdit("wp vProfileNameEdit")
 
             ProfileRenamePromptGui.AddButton("w100 Default", "OK")
                 .OnEvent("Click", SubmitPrompt)
             ProfileRenamePromptGui.AddButton("yp wp", "Cancel")
                 .OnEvent("Click", CancelPrompt)
 
-            add_log "Created profile name prompt GUI"
+            add_log("Created profile name prompt GUI")
         }
 
         ProfileRenamePromptGui["PromptText"].Text := "The profile '" selectedProfileName "' will be renamed to:"
         ProfileRenamePromptGui["ProfileNameEdit"].Value := ""
-        ProfileRenamePromptGui.Opt "-Disabled"
-        ProfilesGui.Opt "+Disabled"
-        showGuiAtAutoclickerGuiPos ProfileRenamePromptGui
+        ProfileRenamePromptGui.Opt("-Disabled")
+        ProfilesGui.Opt("+Disabled")
+        showGuiAtAutoclickerGuiPos(ProfileRenamePromptGui)
 
         SubmitPrompt(*) {
             local profileNewName := ProfileRenamePromptGui["ProfileNameEdit"].Value
             if !validateProfileNameInput(profileNewName)
                 return
 
-            ProfileRenamePromptGui.Opt "+Disabled"
+            ProfileRenamePromptGui.Opt("+Disabled")
 
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
                 if A_LoopRegName = selectedProfileName {
@@ -717,28 +771,28 @@ ProfileManage(*) {
 
                     Loop Reg A_LoopRegKey "\" A_LoopRegName
                         RegWrite RegRead(), A_LoopRegType, newProfileRegPath, A_LoopRegName
-                    add_log "Copied reg data to profile '" profileNewName "'"
+                    add_log("Copied reg data to profile '" profileNewName "'")
 
                     RegDeleteKey
-                    add_log "Deleted profile '" selectedProfileName "'"
+                    add_log("Deleted profile '" selectedProfileName "'")
 
-                    ProfileRenamePromptGui.Hide
-                    ProfilesGui.Opt "-Disabled"
+                    ProfileRenamePromptGui.Hide()
+                    ProfilesGui.Opt("-Disabled")
                     WinActivate "ahk_id " ProfilesGui.Hwnd
-                    refreshProfileList profileNewName
-                    setupProfiles
+                    refreshProfileList(profileNewName)
+                    setupProfiles()
                     return
                 }
             }
             MsgBox "The profile '" selectedProfileName "' does not exist or has been deleted.", "Error", "Iconx 8192"
-            ProfileRenamePromptGui.Opt "-Disabled"
-            refreshProfileList
-            setupProfiles
+            ProfileRenamePromptGui.Opt("-Disabled")
+            refreshProfileList()
+            setupProfiles()
         }
 
         CancelPrompt(*) {
-            ProfileRenamePromptGui.Hide
-            ProfilesGui.Opt "-Disabled"
+            ProfileRenamePromptGui.Hide()
+            ProfilesGui.Opt("-Disabled")
             WinActivate "ahk_id " ProfilesGui.Hwnd
         }
     }
@@ -746,15 +800,17 @@ ProfileManage(*) {
     ProfileExport(*) {
         local selectedProfileName := ProfilesGui["ProfileList"].GetText(ProfilesGui["ProfileList"].GetNext())
 
-        local fileLocation := FileSelect("S16", A_WorkingDir "\" selectedProfileName FILE_EXT
-            , "Export Autoclicker Profile", "Autoclicker Profiles (*" FILE_EXT ")"
+        local fileLocation := FileSelect(
+            "S16", A_WorkingDir "\" selectedProfileName FILE_EXT
+            , "Export Autoclicker Profile"
+            , "Autoclicker Profiles (*" FILE_EXT ")"
         )
         if !fileLocation {
-            add_log "Export for profile '" selectedProfileName "' cancelled"
+            add_log("Export for profile '" selectedProfileName "' cancelled")
             return
         }
 
-        add_log "Exporting profile '" selectedProfileName "'"
+        add_log("Exporting profile '" selectedProfileName "'")
 
         local formatted := ""
         Loop Reg REG_KEY_PATH "\Profiles\" selectedProfileName {
@@ -766,10 +822,10 @@ ProfileManage(*) {
 
         if FileExist(fileLocation) {
             FileDelete fileLocation
-            add_log "Deleted existing file: " fileLocation
+            add_log("Deleted existing file: " fileLocation)
         }
         FileAppend formatted, fileLocation
-        add_log "Wrote to new file: " fileLocation
+        add_log("Wrote to new file: " fileLocation)
     }
 
     ProfileImport(*) {
@@ -778,11 +834,9 @@ ProfileManage(*) {
         )
         local fileLocation
         for fileLocation in fileLocations {
-            add_log "Importing profile from " fileLocation
+            add_log("Importing profile from " fileLocation)
 
-            ;local profileNameMatch
-            ;RegExMatch fileLocation, ".*\\\K(.*?)(\..*)?$", &profileNameMatch
-            local profileName ;:= profileNameMatch.1
+            local profileName
             SplitPath fileLocation, &profileName
 
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
@@ -804,21 +858,28 @@ ProfileManage(*) {
                 Loop Parse FileRead(fileLocation), "`n" {
                     if !A_LoopField
                         continue
+
                     local configMatch
                     RegExMatch A_LoopField, "^(?P<Name>\w+?)=(?P<Value>.+)$", &configMatch
-                    add_log "Read: " configMatch["Name"] " = " configMatch["Value"]
+                    add_log("Read: " configMatch["Name"] " = " configMatch["Value"])
+
                     if configMatch["Name"] = "Hotkeys"
-                        RegWrite StrReplace(configMatch["Value"], "`t", "`n"), "REG_MULTI_SZ"
-                            , REG_KEY_PATH "\Profiles\" profileName, "Hotkeys"
+                        RegWrite StrReplace(configMatch["Value"], "`t", "`n")
+                            , "REG_MULTI_SZ"
+                            , REG_KEY_PATH "\Profiles\" profileName
+                            , "Hotkeys"
                     else
-                        RegWrite configMatch["Value"], configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
-                        , REG_KEY_PATH "\Profiles\" profileName, configMatch["Name"]
+                        RegWrite configMatch["Value"]
+                            , configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
+                            , REG_KEY_PATH "\Profiles\" profileName
+                            , configMatch["Name"]
                 }
             } catch as err {
-                add_log "Import Profile error: " err.Message
+                add_log("Import Profile error: " err.Message)
                 try RegDeleteKey REG_KEY_PATH "\Profiles\" profileName
+
                 MsgBox Format("
-                (
+(
 An error occurred whilst importing the profile '{}' from {}.
 This is usually due to the file's data being corrupt or invalid.
 
@@ -827,18 +888,17 @@ Message: {}
                 return
             }
 
-            refreshProfileList profileName
-
-            add_log "Finished importing profile '" profileName "'"
+            refreshProfileList(profileName)
+            add_log("Finished importing profile '" profileName "'")
         }
     }
 }
 
 ProfileLoad(profileName, *) {
-    add_log "Loading profile '" profileName "'"
+    add_log("Loading profile '" profileName "'")
 
     if !assertProfileExists(profileName) {
-        setupProfiles
+        setupProfiles()
         return
     }
 
@@ -846,44 +906,50 @@ ProfileLoad(profileName, *) {
     try {
         Loop Reg REG_KEY_PATH "\Profiles\" profileName {
             local value := RegRead()
+
             if A_LoopRegName = "Hotkeys" {
-                add_log "Update Hotkeys"
-                Hotkeys_ClearAllHotkeys
+                add_log("Update Hotkeys")
+                Hotkeys_ClearAllHotkeys()
+
                 Loop Parse value, "`n" {
                     if !A_LoopField
                         continue
+
                     local hotkeyDataMatch
                     RegExMatch A_LoopField, "^(?P<Hotkey>.+?)%(?P<Scope>\d)%(?P<Action>\d)$", &hotkeyDataMatch
-                    configured_hotkeys.Push {
+
+                    configured_hotkeys.Push({
                         Hotkey: hotkeyDataMatch["Hotkey"],
                         HotkeyText: formatHotkeyText(hotkeyDataMatch["Hotkey"]),
                         Scope: hotkeyDataMatch["Scope"],
                         Action: hotkeyDataMatch["Action"]
-                    }
+                    })
                 }
-                Hotkeys_updateHotkeyBindings
+
+                Hotkeys_updateHotkeyBindings()
             } else {
-                add_log "Update: " A_LoopRegName " (value=" value ")"
+                add_log("Update: " A_LoopRegName " (value=" value ")")
                 local ctrl := AutoclickerGui[A_LoopRegName]
+
                 if ctrl.Type = "Radio" {
                     local radioInfo := RadioGroups.%A_LoopRegName%
                     radioInfo.Controls[value].Value := true
                     if radioInfo.Callback
-                        radioInfo.Callback.Call radioInfo.Controls[value]
+                        radioInfo.Callback.Call(radioInfo.Controls[value])
                 } else {
                     ctrl.Value := value
                     if ctrl.Type = "Checkbox" {
                         local checkableInfo := Checkables.%A_LoopRegName%
                         if checkableInfo.HasProp("Callback")
-                            checkableInfo.Callback.Call ctrl
+                            checkableInfo.Callback.Call(ctrl)
                     }
                 }
             }
         }
 
-        add_log "Completed profile load"
+        add_log("Completed profile load")
     } catch as err {
-        add_log "Load Profile error: " err.Message
+        add_log("Load Profile error: " err.Message)
         MsgBox Format("
 (
 An error occurred whilst loading the profile '{}'.
@@ -898,10 +964,10 @@ LogsOpen(*) {
     static LogsGui
     if !IsSet(LogsGui) {
         LogsGui := Gui("-MinimizeBox +Owner" AutoclickerGui.Hwnd, "Logs")
-        LogsGui.OnEvent "Escape", hideOwnedGui
-        LogsGui.OnEvent "Close", hideOwnedGui
+        LogsGui.OnEvent("Escape", hideOwnedGui)
+        LogsGui.OnEvent("Close", hideOwnedGui)
 
-        LogsGui.AddListView "w300 h180 vList -LV0x10 +NoSortHdr", ["Time", "Message"]
+        LogsGui.AddListView("w300 h180 vList -LV0x10 +NoSortHdr", ["Time", "Message"])
         LogsGui["List"].ModifyCol(2, "NoSort")
 
         LogsGui.AddButton("w100", "&Refresh")
@@ -909,14 +975,15 @@ LogsOpen(*) {
         LogsGui.AddButton("yp wp Default", "&Close")
             .OnEvent("Click", (*) => hideOwnedGui(LogsGui))
 
-        add_log "Created Logs GUI"
+        add_log("Created Logs GUI")
     }
 
     if WinExist("ahk_id " LogsGui.Hwnd)
         WinActivate
     else
-        showGuiAtAutoclickerGuiPos LogsGui
-    RefreshLogs
+        showGuiAtAutoclickerGuiPos(LogsGui)
+
+    RefreshLogs()
 
     RefreshLogs(*) {
         LogsGui["List"].Delete()
@@ -932,12 +999,12 @@ LogsOpen(*) {
 
 toggleAlwaysOnTop(optionInfo) {
     global always_on_top := optionInfo.CurrentSetting
-    AutoclickerGui.Opt (always_on_top ? "+" : "-") "AlwaysOnTop"
+    AutoclickerGui.Opt((always_on_top ? "+" : "-") "AlwaysOnTop")
 }
 
 toggleHotkeysActive(optionInfo) {
     global are_hotkeys_active := optionInfo.CurrentSetting
-    Hotkeys_updateHotkeyBindings
+    Hotkeys_updateHotkeyBindings()
 }
 
 OptionsMenuItemCallbackWrapper(optionText, *) {
@@ -952,14 +1019,14 @@ OptionsMenuItemCallbackWrapper(optionText, *) {
     optionInfo.CurrentSetting := !optionInfo.CurrentSetting
     RegWrite optionInfo.CurrentSetting, "REG_DWORD", REG_KEY_PATH, optionInfo.ValueName
 
-    OptionsMenu.ToggleCheck optionText
-    optionInfo.Toggler
+    OptionsMenu.ToggleCheck(optionText)
+    optionInfo.Toggler()
 
-    add_log (optionInfo.CurrentSetting ? "Enabled " : "Disabled ") optionInfo.ValueName
+    add_log((optionInfo.CurrentSetting ? "Enabled " : "Disabled ") optionInfo.ValueName)
 }
 
 ResetOptionsToDefault(*) {
-    add_log "Resetting all options to default"
+    add_log("Resetting all options to default")
 
     Loop Reg REG_KEY_PATH {
         if A_LoopRegName != "LastUpdateCheck"
@@ -970,35 +1037,35 @@ ResetOptionsToDefault(*) {
     for optionInfo in PersistentOptions {
         if optionInfo.CurrentSetting != optionInfo.Default {
             optionInfo.CurrentSetting := optionInfo.Default
-            optionInfo.Toggler
+            optionInfo.Toggler()
         }
         if optionInfo.CurrentSetting
-            OptionsMenu.Check optionInfo.Text
+            OptionsMenu.Check(optionInfo.Text)
         else
-            OptionsMenu.Uncheck optionInfo.Text
+            OptionsMenu.Uncheck(optionInfo.Text)
     }
 }
 
 AboutOpen(*) {
-    AutoclickerGui.Opt "+Disabled"
+    AutoclickerGui.Opt("+Disabled")
 
     static AboutGui
     if !IsSet(AboutGui) {
         AboutGui := Gui("-MinimizeBox +Owner" AutoclickerGui.Hwnd, "About EC Autoclicker")
-        AboutGui.OnEvent "Escape", hideOwnedGui
-        AboutGui.OnEvent "Close", hideOwnedGui
+        AboutGui.OnEvent("Escape", hideOwnedGui)
+        AboutGui.OnEvent("Close", hideOwnedGui)
 
-        AboutGui.AddPicture "w40 h40", A_IsCompiled ? A_ScriptFullPath : A_ProgramFiles "\AutoHotkey\v2\AutoHotkey.exe"
-        AboutGui.SetFont "s12 bold"
-        AboutGui.AddText "xp+50 yp", "EC Autoclicker version " (A_IsCompiled ? SubStr(FileGetVersion(A_ScriptFullPath), 1, -2) : "?")
-        AboutGui.SetFont
-        AboutGui.AddText "xp wp", "An open-source configurable autoclicking utility for Windows."
-        AboutGui.AddLink "xp", '<a href="https://github.com/' GITHUB_REPO '">https://github.com/' GITHUB_REPO "</a>"
+        AboutGui.AddPicture("w40 h40", A_IsCompiled ? A_ScriptFullPath : A_ProgramFiles "\AutoHotkey\v2\AutoHotkey.exe")
+        AboutGui.SetFont("s12 bold")
+        AboutGui.AddText("xp+50 yp", "EC Autoclicker version " (A_IsCompiled ? SubStr(FileGetVersion(A_ScriptFullPath), 1, -2) : "?"))
+        AboutGui.SetFont()
+        AboutGui.AddText("xp wp", "An open-source configurable autoclicking utility for Windows.")
+        AboutGui.AddLink("xp", '<a href="https://github.com/' GITHUB_REPO '">https://github.com/' GITHUB_REPO "</a>")
 
-        add_log "Created About GUI"
+        add_log("Created About GUI")
     }
 
-    showGuiAtAutoclickerGuiPos AboutGui
+    showGuiAtAutoclickerGuiPos(AboutGui)
 }
 
 Start(*) {
@@ -1010,7 +1077,7 @@ Start(*) {
     local currentConfig := AutoclickerGui.Submit(false)
 
     local buttonClickData := { 1: "L", 2: "R", 3: "M" }.%currentConfig.General_MouseButton_Radio%
-    . " " ({ 1: 1, 2: 2, 3: 3, 4: 0 }.%currentConfig.General_ClickCount_DropDownList%)
+        . " " ({ 1: 1, 2: 2, 3: 3, 4: 0 }.%currentConfig.General_ClickCount_DropDownList%)
 
     CoordMode "Mouse", currentConfig.Positioning_RelativeTo_Radio = 1 ? "Screen" : "Client"
 
@@ -1019,14 +1086,14 @@ Start(*) {
 
     local stopCriteria := []
     if currentConfig.Scheduling_StopAfterNumClicks_Checkbox
-        stopCriteria.Push () => clickCount >= currentConfig.Scheduling_StopAfterNumClicks_NumEdit
+        stopCriteria.Push(() => clickCount >= currentConfig.Scheduling_StopAfterNumClicks_NumEdit)
     if currentConfig.Scheduling_StopAfterDuration_Checkbox
-        stopCriteria.Push () => A_TickCount - timeStarted >= currentConfig.Scheduling_StopAfterDuration_NumEdit
+        stopCriteria.Push(() => A_TickCount - timeStarted >= currentConfig.Scheduling_StopAfterDuration_NumEdit)
     if currentConfig.Scheduling_StopAfterTime_Checkbox
-        stopCriteria.Push () => A_Now >= currentConfig.Scheduling_StopAfterTime_DateTime
+        stopCriteria.Push(() => A_Now >= currentConfig.Scheduling_StopAfterTime_DateTime)
 
     global is_autoclicking := true
-    add_log "Starting autoclicking"
+    add_log("Starting autoclicking")
 
     if currentConfig.Scheduling_PreStartDelay_Checkbox
         Sleep currentConfig.Scheduling_PreStartDelay_NumEdit
@@ -1039,14 +1106,15 @@ Start(*) {
         switch currentConfig.Positioning_BoundaryMode_Radio {
             case 1: coords := ""
             case 2: coords := currentConfig.Positioning_XPos_NumEdit " " currentConfig.Positioning_YPos_NumEdit
-            case 3: coords := Random(currentConfig.Positioning_XMinPos_NumEdit, currentConfig.Positioning_XMaxPos_NumEdit)
+            case 3:
+                coords := Random(currentConfig.Positioning_XMinPos_NumEdit, currentConfig.Positioning_XMaxPos_NumEdit)
                     . " " Random(currentConfig.Positioning_YMinPos_NumEdit, currentConfig.Positioning_YMaxPos_NumEdit)
         }
 
         Click coords, buttonClickData
 
         AutoclickerGui["StatusBar"].SetText(" Clicks: " (++clickCount))
-        AutoclickerGui["StatusBar"].SetText("Elapsed: " Round((A_TickCount - timeStarted) / 1000, 2), 2)
+        AutoclickerGui["StatusBar"].SetText("Elapsed: " Round((A_TickCount - timeStarted) / 1000, 2), 2)
 
         local mouseX, mouseY
         MouseGetPos &mouseX, &mouseY
@@ -1055,19 +1123,22 @@ Start(*) {
         if stopCriteria.Length > 0 {
             local passedCriteria := 0
             for check in stopCriteria {
-                if check() {
-                    passedCriteria += 1
-                    if currentConfig.Scheduling_StopAfterMode_DropDownList = 1 || passedCriteria = stopCriteria.Length {
-                        add_log "Stopping automatically"
-                        Stop
-                        switch currentConfig.Scheduling_PostStopAction_DropDownList {
-                            case 2: Close()
-                            case 3:
-                                if WinExist("A")
-                                    WinClose
-                            case 4: Shutdown 0
-                        }
-                    }
+                if !check()
+                    continue
+
+                passedCriteria += 1
+                if currentConfig.Scheduling_StopAfterMode_DropDownList = 2
+                    && passedCriteria < stopCriteria.Length
+                    continue
+
+                add_log("Stopping automatically")
+                Stop()
+                switch currentConfig.Scheduling_PostStopAction_DropDownList {
+                    case 2: Close()
+                    case 3:
+                        if WinExist("A")
+                            WinClose
+                    case 4: Shutdown 0
                 }
             }
         }
@@ -1093,26 +1164,26 @@ Close(*) {
 
 CheckForUpdates(isManual) {
     if !DllCall("Wininet.dll\InternetGetConnectedState", "Str", "0x40", "Int", 0) {
-        add_log "No internet connection; not checking for updates"
+        add_log("No internet connection; not checking for updates")
         if isManual
             MsgBox "
-        (
+(
 EC Autoclicker is unable to check for updates as there is currently no internet connection.
 Please connect to the internet and try again.
 )", "Update", "Icon! 262144"
         return
     }
-    add_log "Checking for updates"
+    add_log("Checking for updates")
 
     local oHttp := ComObject("WinHttp.Winhttprequest.5.1")
-    oHttp.open "GET", "https://api.github.com/repos/" GITHUB_REPO "/releases/latest"
-    oHttp.send
+    oHttp.open("GET", "https://api.github.com/repos/" GITHUB_REPO "/releases/latest")
+    oHttp.send()
 
     local verNumMatch
     if !RegExMatch(oHttp.responseText, '"tag_name":"v(.*?)"', &verNumMatch) {
-        add_log "Unable to obtain latest release version"
+        add_log("Unable to obtain latest release version")
         MsgBox "
-        (
+(
 EC Autoclicker was unable to retrieve its latest version on the web.
 Please try again later, or update EC Autoclicker manually if this error reoccurs.
 )", "Update", "Iconx 262144"
@@ -1121,15 +1192,15 @@ Please try again later, or update EC Autoclicker manually if this error reoccurs
 
     local thisVersion := SubStr(FileGetVersion(A_ScriptFullPath), 1, -2)
     if verNumMatch.1 = thisVersion {
-        add_log "Current version is up to date with the latest release"
+        add_log("Current version is up to date with the latest release")
+        RegWrite A_NowUTC, "REG_SZ", REG_KEY_PATH, "LastUpdateCheck"
         if isManual
             MsgBox "EC Autoclicker is up to date (" verNumMatch.1 ").", "Update", "Iconi 262144"
-        RegWrite A_NowUTC, "REG_SZ", REG_KEY_PATH, "LastUpdateCheck"
         return
     }
 
     if MsgBox(Format("
-        (
+(
 A newer version of EC Autoclicker ({}) is available.
 Your current version is {}. Would you like to update now?
 )", verNumMatch.1, thisVersion), "Update", "YesNo Icon? 262144"
@@ -1138,14 +1209,16 @@ Your current version is {}. Would you like to update now?
         while !downloadFilePath || FileExist(downloadFilePath)
             downloadFilePath := A_ScriptDir "\" SubStr(A_ScriptName, 1, -4) "-new-" Random(100000, 999999) ".exe"
 
-        add_log "Downloading file"
+        add_log("Downloading file")
 
         local err
-        try Download "https://github.com/" GITHUB_REPO "/releases/latest/download/EC-Autoclicker.exe"
+        try
+            Download "https://github.com/" GITHUB_REPO "/releases/latest/download/EC-Autoclicker.exe"
                 , downloadFilePath
         catch as err
             MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker.`n`nMessage: " err.Message
-                , "Update", "Iconx 262144"
+                , "Update"
+                , "Iconx 262144"
         else {
             add_log("File downloaded")
             Run "powershell.exe -WindowStyle Hidden -Command Start-Sleep -Seconds 1;"
@@ -1162,15 +1235,15 @@ for optionInfo in PersistentOptions {
     OptionsMenu.Add optionInfo.Text, OptionsMenuItemCallbackWrapper
     optionInfo.CurrentSetting := RegRead(REG_KEY_PATH, optionInfo.ValueName, optionInfo.Default)
     if optionInfo.CurrentSetting != optionInfo.Default
-        optionInfo.Toggler
+        optionInfo.Toggler()
     if optionInfo.CurrentSetting
-        OptionsMenu.Check optionInfo.Text
+        OptionsMenu.Check(optionInfo.Text)
 }
-OptionsMenu.Add
-OptionsMenu.Add SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault
+OptionsMenu.Add()
+OptionsMenu.Add(SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault)
 
 if A_Args.Length > 0 && A_Args[1] = "/profile" {
-    add_log "Detected /profile switch"
+    add_log("Detected /profile switch")
 
     if A_Args.Length < 2 {
         MsgBox "A profile name must be specified.", "Error", "Iconx 262144"
@@ -1185,8 +1258,8 @@ if A_Args.Length > 0 && A_Args[1] = "/profile" {
     Close()
 }
 
-AutoclickerGui.Show "x0"
-add_log "Showed main GUI"
+AutoclickerGui.Show("x0")
+add_log("Showed main GUI")
 
 if A_IsCompiled {
     if A_Args.Length > 0 && A_Args[1] = "/updated" {
@@ -1194,8 +1267,8 @@ if A_IsCompiled {
         MsgBox "EC Autoclicker has been updated successfully.`nNew version: " SubStr(FileGetVersion(A_ScriptFullPath), 1, -2)
             , "Update", "Iconi 262144"
     } else if RegRead(REG_KEY_PATH, "AutoUpdate", true) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800 {
-        add_log "Automatically checking for newer version"
-        CheckForUpdates false
+        add_log("Automatically checking for newer version")
+        CheckForUpdates(false)
     }
 }
 
@@ -1205,3 +1278,4 @@ Loop {
     AutoclickerGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 3, 2)
     Sleep 100
 }
+
