@@ -34,14 +34,6 @@ Executables provided in Releases are compiled using [Ahk2Exe](https://github.com
 - Persistent settings to customize the user interface
 - Automatic update checking (optional)
 
-## Upcoming Features
-
-- Mouse button hold-down
-- "Simplified View" mode — only a list of profiles and the Start/Stop button
-  are displayed
-- The ability to select between different units (ms/s/min/h) for inputting
-  duration values
-
 ## Getting Started
 
 ### Method 1: Compiled executable from Releases
