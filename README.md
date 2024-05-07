@@ -5,7 +5,7 @@ tility for Windows, written fully in [AutoHotkey](https://www.autohotkey.com/)
 v2. It aims to provide a large variety of configurability and functionality
 never before seen in other general-purpose autoclicking tools.
 
-![image](https://user-images.githubusercontent.com/81153405/197357672-2907060d-9ce3-4f93-8696-6078b48f4720.png)
+![image](screenshots/gui-main.png)
 
 Executables provided in Releases are compiled using [Ahk2Exe](https://github.com/AutoHotkey/Ahk2Exe)
 , with [UPX](https://upx.github.io/) for compression.
