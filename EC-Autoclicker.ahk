@@ -11,7 +11,6 @@ GITHUB_REPO := "Expertcoderz/EC-Autoclicker"
 
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
-RegCreateKey REG_KEY_PATH "\Profiles"
 
 SZ_TABLE := {
     ; Menus
@@ -27,6 +26,7 @@ SZ_TABLE := {
     Menu_Profiles_Create: "&Save...",
     Menu_Profiles_Manage: "&Manage",
     ; Options Menu
+    Menu_Options_SimplifiedView: "&Simplified View",
     Menu_Options_AlwaysOnTop: "&Always On Top",
     Menu_Options_MinButtonVisible: "&Minimize Button Visible",
     Menu_Options_EscToClose: "&ESC To Close",
@@ -60,6 +60,7 @@ SZ_TABLE := {
 
 program_logs := []
 is_autoclicking := false
+is_simplified_view_on := false
 is_always_on_top_on := true
 
 configured_hotkeys := []
@@ -106,22 +107,16 @@ FileMenu.Add(SZ_TABLE.Menu_File_Logs, LogsOpen)
 FileMenu.Add(SZ_TABLE.Menu_File_Exit, Close)
 
 ProfilesMenu := Menu()
-setupProfiles() {
-    ProfilesMenu.Delete()
-    ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Create, ProfileCreate)
-    ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Manage, ProfileManage)
-    ProfilesMenu.Add()
-
-    Loop Reg REG_KEY_PATH "\Profiles", "K"
-        ProfilesMenu.Add(A_LoopRegName, ProfileLoad)
-
-    add_log("Loaded profiles")
-}
-setupProfiles()
 
 OptionsMenu := Menu()
 
 PersistentOptions := [
+    {
+        ValueName: "SimplifiedView",
+        Default: false,
+        Text: SZ_TABLE.Menu_Options_SimplifiedView,
+        Toggler: toggleSimplifiedView
+    },
     {
         ValueName: "AlwaysOnTop",
         Default: true,
@@ -334,6 +329,9 @@ AutoclickerGui.AddButton("yp wp vHotkeys_ClearAllHotkeys_Button", "&Clear All")
 
 AutoclickerGui["Tab"].UseTab()
 
+AutoclickerGui.AddText("xm ym vSimplifiedViewHeaderText Hidden", "Select a profile:")
+AutoclickerGui.AddListBox("xp yp+20 w248 h188 vSimplifiedViewListBox Hidden Sort 0x100")
+
 AutoclickerGui.AddButton("xm w121 vStartButton Default", "START")
     .OnEvent("Click", Start)
 AutoclickerGui.AddButton("yp wp vStopButton Disabled", "STOP")
@@ -351,6 +349,39 @@ add_log(text) {
     program_logs.Push({ Timestamp: A_Now, Message: text })
     if program_logs.Length > 100
         program_logs.RemoveAt(1)
+}
+
+refreshProfileSelectionLists() {
+    ProfilesMenu.Delete()
+    ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Create, ProfileCreate)
+    ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Manage, ProfileManage)
+    ProfilesMenu.Add()
+
+    if is_simplified_view_on
+        ProfilesMenu.Disable(SZ_TABLE.Menu_Profiles_Create)
+    else
+        ProfilesMenu.Enable(SZ_TABLE.Menu_Profiles_Create)
+
+    AutoclickerGui["SimplifiedViewListBox"].Delete()
+
+    local numProfiles := 0
+    Loop Reg REG_KEY_PATH "\Profiles", "K" {
+        numProfiles++
+        ProfilesMenu.Add(A_LoopRegName, ProfileLoad)
+        AutoclickerGui["SimplifiedViewListBox"].Add([A_LoopRegName])
+    }
+
+    if numProfiles < 1 {
+        if is_simplified_view_on
+            AutoclickerGui["StartButton"].Enabled := false
+        else
+            AutoclickerGui["StartButton"].Enabled := !is_autoclicking
+    } else {
+        AutoclickerGui["SimplifiedViewListBox"].Value := 1
+        AutoclickerGui["StartButton"].Enabled := !is_autoclicking
+    }
+
+    add_log("Loaded " numProfiles " profile(s)")
 }
 
 setupOptionsMenu() {
@@ -662,7 +693,11 @@ ProfileCreate(*) {
 
         for ctrlName, value in currentConfig.OwnProps() {
             if !InStr(ctrlName, "_")
+                ; Ignore any controls (e.g. SimplifiedViewListBox) that lack
+                ; underscores in their names since they are not part of the
+                ; profile configuration.
                 continue
+
             RegWrite value
                 , ctrlName ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
                 , REG_KEY_PATH "\Profiles\" profileName
@@ -680,7 +715,7 @@ ProfileCreate(*) {
 
         add_log("Wrote configuration data to registry")
 
-        setupProfiles()
+        refreshProfileSelectionLists()
         hideOwnedGui(ProfileNamePromptGui)
     }
 }
@@ -715,7 +750,7 @@ ProfileManage(*) {
             ProfilesGui["ProfileList"].Add(A_LoopRegName = selectProfileName ? "+Focus +Select" : "", A_LoopRegName)
 
         ProfileListSelectionChanged()
-        setupProfiles()
+        refreshProfileSelectionLists()
     }
 
     ProfileListSelectionChanged(*) {
@@ -787,14 +822,12 @@ ProfileManage(*) {
                     ProfilesGui.Opt("-Disabled")
                     WinActivate "ahk_id " ProfilesGui.Hwnd
                     refreshProfileList(profileNewName)
-                    setupProfiles()
                     return
                 }
             }
             MsgBox "The profile '" selectedProfileName "' does not exist or has been deleted.", "Error", "Iconx 8192"
             ProfileRenamePromptGui.Opt("-Disabled")
             refreshProfileList()
-            setupProfiles()
         }
 
         CancelPrompt(*) {
@@ -903,7 +936,7 @@ ProfileLoad(profileName, *) {
     add_log("Loading profile '" profileName "'")
 
     if !assertProfileExists(profileName) {
-        setupProfiles()
+        refreshProfileSelectionLists()
         return
     }
 
@@ -1000,6 +1033,15 @@ LogsOpen(*) {
     }
 }
 
+toggleSimplifiedView(optionInfo) {
+    global is_simplified_view_on := optionInfo.CurrentSetting
+    AutoclickerGui["Tab"].Visible := !is_simplified_view_on
+    AutoclickerGui["SimplifiedViewHeaderText"].Visible := is_simplified_view_on
+    AutoclickerGui["SimplifiedViewListBox"].Visible := is_simplified_view_on
+
+    refreshProfileSelectionLists()
+}
+
 toggleAlwaysOnTop(optionInfo) {
     global is_always_on_top_on := optionInfo.CurrentSetting
     AutoclickerGui.Opt((is_always_on_top_on ? "+" : "-") "AlwaysOnTop")
@@ -1075,6 +1117,9 @@ Start(*) {
     AutoclickerGui["StartButton"].Enabled := false
     AutoclickerGui["StopButton"].Enabled := true
     AutoclickerGui["StopButton"].Focus()
+
+    if is_simplified_view_on
+        ProfileLoad(AutoclickerGui["SimplifiedViewListBox"].Text)
 
     local currentConfig := AutoclickerGui.Submit(false)
 
@@ -1232,7 +1277,7 @@ Your current version is {}. Would you like to update now?
     }
 }
 
-setupOptionsMenu()
+RegCreateKey REG_KEY_PATH "\Profiles"
 
 if A_Args.Length > 0 && A_Args[1] = "/profile" {
     add_log("Detected /profile switch")
@@ -1249,6 +1294,9 @@ if A_Args.Length > 0 && A_Args[1] = "/profile" {
     Start()
     Close()
 }
+
+refreshProfileSelectionLists()
+setupOptionsMenu()
 
 AutoclickerGui.Show("x0")
 add_log("Showed main GUI")
