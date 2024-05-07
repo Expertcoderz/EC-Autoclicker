@@ -60,7 +60,7 @@ SZ_TABLE := {
 
 program_logs := []
 is_autoclicking := false
-always_on_top := true
+is_always_on_top_on := true
 
 configured_hotkeys := []
 are_hotkeys_active := true
@@ -71,7 +71,6 @@ makeRadioGroup(name, radioControls, changedCallback := 0) {
     radioControls[1].Name := name
     RadioGroups.%name% := { Controls: radioControls, Callback: changedCallback }
     if changedCallback {
-        local ctrl
         for ctrl in radioControls
             ctrl.OnEvent("Click", changedCallback)
     }
@@ -82,7 +81,6 @@ makeCheckable(name, checkbox, callback := 0, controls := []) {
     if callback = 1 {
         checkbox.OnEvent("Click", Toggle)
         Toggle(*) {
-            local ctrl
             for ctrl in controls
                 ctrl.Enabled := checkbox.Value
         }
@@ -355,10 +353,26 @@ add_log(text) {
         program_logs.RemoveAt(1)
 }
 
+setupOptionsMenu() {
+    for optionInfo in PersistentOptions {
+        OptionsMenu.Add(optionInfo.Text, OptionsMenuItemCallbackWrapper)
+
+        optionInfo.CurrentSetting := RegRead(REG_KEY_PATH, optionInfo.ValueName, optionInfo.Default)
+
+        if optionInfo.CurrentSetting != optionInfo.Default
+            optionInfo.Toggler()
+        if optionInfo.CurrentSetting
+            OptionsMenu.Check(optionInfo.Text)
+    }
+
+    OptionsMenu.Add()
+    OptionsMenu.Add(SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault)
+}
+
 showGuiAtAutoclickerGuiPos(gui) {
     local posX, posY
     AutoclickerGui.GetPos(&posX, &posY)
-    gui.Opt((always_on_top ? "+" : "-") "AlwaysOnTop")
+    gui.Opt((is_always_on_top_on ? "+" : "-") "AlwaysOnTop")
     gui.Show("x" posX " y" posY)
 }
 
@@ -397,7 +411,6 @@ validateProfileNameInput(profileName) {
 }
 
 formatHotkeyText(hotkey) {
-    local k, v
     for k, v in Map("~", "", "^", "{ctrl}", "!", "{alt}", "+", "{shift}")
         hotkey := StrReplace(hotkey, k, v)
     return hotkey
@@ -461,7 +474,6 @@ Positioning_ChangedModeSelection(radio, *) {
 Hotkeys_updateHotkeyBindings() {
     AutoclickerGui["Hotkeys_HotkeyList_ListView"].Delete()
 
-    local hotkeyData
     for hotkeyData in configured_hotkeys {
         AutoclickerGui["Hotkeys_HotkeyList_ListView"].Add(
             , hotkeyData.Action = 1 ? "Start"
@@ -478,7 +490,6 @@ Hotkeys_updateHotkeyBindings() {
 
         HotkeyEvent(hotkey) {
             local hotkeyData
-            local hDat
             for hDat in configured_hotkeys {
                 if hDat.Hotkey = hotkey {
                     hotkeyData := hDat
@@ -551,9 +562,6 @@ Hotkeys_AddHotkey(*) {
     Submit(*) {
         hideOwnedGui(KeyBinderGui)
 
-        local hotkeyText := formatHotkeyText(KeyBinderGui["Hotkey"].Value)
-
-        local hotkeyData
         for hotkeyData in configured_hotkeys {
             if "~" KeyBinderGui["Hotkey"].Value = hotkeyData.Hotkey {
                 if MsgBox(
@@ -567,6 +575,8 @@ Hotkeys_AddHotkey(*) {
                 break
             }
         }
+
+        local hotkeyText := formatHotkeyText(KeyBinderGui["Hotkey"].Value)
 
         configured_hotkeys.Push {
             Hotkey: "~" KeyBinderGui["Hotkey"].Value,
@@ -589,7 +599,6 @@ Hotkeys_RemoveHotkey(*) {
         if !rowNum
             break
 
-        local hotkeyData
         for hotkeyData in configured_hotkeys {
             if hotkeyData.HotkeyText = AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetText(rowNum, 3) {
                 configured_hotkeys.RemoveAt(A_Index)
@@ -605,7 +614,6 @@ Hotkeys_RemoveHotkey(*) {
 }
 
 Hotkeys_ClearAllHotkeys(*) {
-    local hotkeyData
     for hotkeyData in configured_hotkeys {
         configured_hotkeys.Delete(A_Index)
         Hotkey hotkeyData.Hotkey, "Off"
@@ -652,7 +660,6 @@ ProfileCreate(*) {
 
         RegCreateKey REG_KEY_PATH "\Profiles\" profileName
 
-        local ctrlName, value
         for ctrlName, value in currentConfig.OwnProps() {
             if !InStr(ctrlName, "_")
                 continue
@@ -663,9 +670,9 @@ ProfileCreate(*) {
         }
 
         local serializedHotkeys := ""
-        local hotkeyData
         for hotkeyData in configured_hotkeys
             serializedHotkeys .= hotkeyData.Hotkey "%" hotkeyData.Scope "%" hotkeyData.Action "`n"
+
         RegWrite serializedHotkeys
             , "REG_MULTI_SZ"
             , REG_KEY_PATH "\Profiles\" profileName
@@ -832,7 +839,6 @@ ProfileManage(*) {
         local fileLocations := FileSelect("M",
             , "Import Autoclicker Profile(s)", "Autoclicker Profiles (*" FILE_EXT ")"
         )
-        local fileLocation
         for fileLocation in fileLocations {
             add_log("Importing profile from " fileLocation)
 
@@ -853,7 +859,6 @@ ProfileManage(*) {
 
             RegCreateKey REG_KEY_PATH "\Profiles\" profileName
 
-            local err
             try {
                 Loop Parse FileRead(fileLocation), "`n" {
                     if !A_LoopField
@@ -902,7 +907,6 @@ ProfileLoad(profileName, *) {
         return
     }
 
-    local err
     try {
         Loop Reg REG_KEY_PATH "\Profiles\" profileName {
             local value := RegRead()
@@ -988,7 +992,6 @@ LogsOpen(*) {
     RefreshLogs(*) {
         LogsGui["List"].Delete()
 
-        local data
         for data in program_logs {
             LogsGui["List"].Add(, FormatTime(data.Timestamp, "HH:mm:ss"), data.Message)
         }
@@ -998,8 +1001,8 @@ LogsOpen(*) {
 }
 
 toggleAlwaysOnTop(optionInfo) {
-    global always_on_top := optionInfo.CurrentSetting
-    AutoclickerGui.Opt((always_on_top ? "+" : "-") "AlwaysOnTop")
+    global is_always_on_top_on := optionInfo.CurrentSetting
+    AutoclickerGui.Opt((is_always_on_top_on ? "+" : "-") "AlwaysOnTop")
 }
 
 toggleHotkeysActive(optionInfo) {
@@ -1033,7 +1036,6 @@ ResetOptionsToDefault(*) {
             RegDelete
     }
 
-    local optionInfo
     for optionInfo in PersistentOptions {
         if optionInfo.CurrentSetting != optionInfo.Default {
             optionInfo.CurrentSetting := optionInfo.Default
@@ -1211,7 +1213,6 @@ Your current version is {}. Would you like to update now?
 
         add_log("Downloading file")
 
-        local err
         try
             Download "https://github.com/" GITHUB_REPO "/releases/latest/download/EC-Autoclicker.exe"
                 , downloadFilePath
@@ -1231,16 +1232,7 @@ Your current version is {}. Would you like to update now?
     }
 }
 
-for optionInfo in PersistentOptions {
-    OptionsMenu.Add optionInfo.Text, OptionsMenuItemCallbackWrapper
-    optionInfo.CurrentSetting := RegRead(REG_KEY_PATH, optionInfo.ValueName, optionInfo.Default)
-    if optionInfo.CurrentSetting != optionInfo.Default
-        optionInfo.Toggler()
-    if optionInfo.CurrentSetting
-        OptionsMenu.Check(optionInfo.Text)
-}
-OptionsMenu.Add()
-OptionsMenu.Add(SZ_TABLE.Menu_Options_ResetToDefault, ResetOptionsToDefault)
+setupOptionsMenu()
 
 if A_Args.Length > 0 && A_Args[1] = "/profile" {
     add_log("Detected /profile switch")
