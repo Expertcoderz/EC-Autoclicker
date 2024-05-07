@@ -181,7 +181,7 @@ Menus.Add(SZ_TABLE.Menu_Options, OptionsMenu)
 Menus.Add(SZ_TABLE.Menu_Help, HelpMenu)
 AutoclickerGui.MenuBar := Menus
 
-AutoclickerGui.AddTab3("w250 h208 vTab", [
+AutoclickerGui.AddTab3("w248 h208 vTab", [
     SZ_TABLE.Tabs.General,
     SZ_TABLE.Tabs.Scheduling,
     SZ_TABLE.Tabs.Positioning,
@@ -226,9 +226,9 @@ makeCheckable(
     "General_SoundBeep_Checkbox"
     , AutoclickerGui.AddCheckbox("xs", "Play a &beep at")
     , 1
-    , [AutoclickerGui.AddEdit("xp+88 yp-2 w36 vGeneral_SoundBeep_NumEdit Disabled Limit Number", "600")]
+    , [AutoclickerGui.AddEdit("xp+90 yp-2 w36 vGeneral_SoundBeep_NumEdit Disabled Limit Number", "600")]
 )
-AutoclickerGui.AddText("xp+40 yp+2", "Hz at every click")
+AutoclickerGui.AddText("xp+42 yp+2", "Hz at every click")
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Scheduling)
 
@@ -236,9 +236,9 @@ makeCheckable(
     "Scheduling_PreStartDelay_Checkbox"
     , AutoclickerGui.AddCheckbox("Section", "&Delay before starting:")
     , 1
-    , [AutoclickerGui.AddEdit("xp+122 yp-2 w50 vScheduling_PreStartDelay_NumEdit Disabled Limit Number", "0")]
+    , [AutoclickerGui.AddEdit("xp+124 yp-2 w50 vScheduling_PreStartDelay_NumEdit Disabled Limit Number", "0")]
 )
-AutoclickerGui.AddText("xp+54 ys vScheduling_PreStartDelay_UnitText", "ms")
+AutoclickerGui.AddText("xp+56 ys vScheduling_PreStartDelay_UnitText", "ms")
 
 AutoclickerGui.AddGroupBox("xs ys+25 w226 h148 Section", "Stop after")
 
@@ -254,8 +254,8 @@ makeCheckable(
     , AutoclickerGui.AddCheckbox("xs+10 yp+25", "D&uration:")
     , Scheduling_StopAfterDurationToggled
 )
-AutoclickerGui.AddEdit("xp+65 yp-2 w45 vScheduling_StopAfterDuration_NumEdit Disabled Limit Number", "60")
-AutoclickerGui.AddText("xp+48 yp+2 vScheduling_StopAfterDuration_UnitText Disabled", "ms")
+AutoclickerGui.AddEdit("xp+67 yp-2 w45 vScheduling_StopAfterDuration_NumEdit Disabled Limit Number", "60")
+AutoclickerGui.AddText("xp+50 yp+2 vScheduling_StopAfterDuration_UnitText Disabled", "ms")
 
 makeCheckable(
     "Scheduling_StopAfterTime_Checkbox"
