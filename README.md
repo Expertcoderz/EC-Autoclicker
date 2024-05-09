@@ -58,8 +58,8 @@ must be installed.
 **Note:** In its uncompiled script form, EC Autoclicker is unable to check for
 newer versions online (neither automatically nor manually).
 
-Download `EC-Autoclicker.ahk` from the [`main`](https://github.com/Expertcoderz/EC-Autoclicker/tree/main)
-branch and run it with AHK v2 to use EC Autoclicker.
+Download either the repository or all `.ahk` files under the [`src`](https://github.com/Expertcoderz/EC-Autoclicker/tree/main/src)
+directory. Run `src\EC-Autoclicker.ahk` with AHK v2 to use EC Autoclicker.
 
 You will receive the latest (and possibly experimental) version of EC
 Autoclicker, regardless of whether it is the same as the released version.
