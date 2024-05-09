@@ -43,15 +43,18 @@ A newer version of EC Autoclicker ({}) is available.
 Your current version is {}. Would you like to update now?
 )", verNumMatch.1, thisVersion), "Update", "YesNo Icon? 262144"
     ) = "Yes" {
-        local downloadFilePath := ""
-        while !downloadFilePath || FileExist(downloadFilePath)
-            downloadFilePath := A_ScriptDir "\" SubStr(A_ScriptName, 1, -4) "-new-" Random(100000, 999999) ".exe"
+        local downloadFileTargetName := "EC-Autoclicker" (A_Is64bitOS ? "_x64" : "") ".exe"
+
+        local downloadFileInitialPath
+        Loop
+            downloadFileInitialPath := A_ScriptDir "\" downloadFileTargetName ".new-" Random(100000, 9999999)
+        Until !FileExist(downloadFileInitialPath)
 
         add_log("Downloading file")
 
         try
-            Download "https://github.com/" GITHUB_REPO "/releases/latest/download/EC-Autoclicker.exe"
-                , downloadFilePath
+            Download "https://github.com/" GITHUB_REPO "/releases/latest/download/" downloadFileTargetName
+                , downloadFileInitialPath
         catch as err
             MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker.`n`nMessage: " err.Message
                 , "Update"
@@ -59,9 +62,9 @@ Your current version is {}. Would you like to update now?
         else {
             add_log("File downloaded")
             Run "powershell.exe -WindowStyle Hidden -Command Start-Sleep -Seconds 1;"
-                . 'Remove-Item -LiteralPath "' A_ScriptFullPath '";'
-                . 'Rename-Item -LiteralPath "' downloadFilePath '" -NewName "' A_ScriptName '";'
-                . 'Start-Process -FilePath "' A_ScriptDir '\EC-Autoclicker.exe /updated"'
+                . "Remove-Item -LiteralPath '" A_ScriptFullPath "';"
+                . "Rename-Item -LiteralPath '" downloadFileInitialPath "' -NewName '" downloadFileTargetName "';"
+                . "Start-Process -FilePath '" A_ScriptDir "\" downloadFileTargetName "' -ArgumentList '/updated'"
                 , , "Hide"
             ExitApp
         }
