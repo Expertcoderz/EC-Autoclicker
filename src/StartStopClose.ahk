@@ -1,4 +1,4 @@
-; Main autoclicking logic
+; Main autoclicking routines
 
 Start(*) {
     AutoclickerGui["Tab"].Enabled := false
@@ -46,7 +46,12 @@ Start(*) {
                     . " " Random(currentConfig.Positioning_YMinPos_NumEdit, currentConfig.Positioning_YMaxPos_NumEdit)
         }
 
-        Click coords, buttonClickData
+        if currentConfig.General_ClickHoldDownDuration_NumEdit {
+            Click coords, buttonClickData, "Down"
+            Sleep currentConfig.General_ClickHoldDownDuration_NumEdit
+            Click "Up"
+        } else
+            Click coords, buttonClickData
 
         AutoclickerGui["StatusBar"].SetText(" Clicks: " (++clickCount))
         AutoclickerGui["StatusBar"].SetText("Elapsed: " Round((A_TickCount - timeStarted) / 1000, 2), 2)

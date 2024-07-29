@@ -84,12 +84,16 @@ makeRadioGroup("General_MouseButton_Radio", [
     AutoclickerGui.AddRadio("yp", "&Middle")
 ])
 
-AutoclickerGui.AddDropDownList("xs+10 yp+20 w100 vGeneral_ClickCount_DropDownList AltSubmit Choose1", [
+AutoclickerGui.AddDropDownList("xs+10 yp+20 w85 vGeneral_ClickCount_DropDownList AltSubmit Choose1", [
     "Single click",
     "Double click",
     "Triple click",
     "No click"
 ])
+
+AutoclickerGui.AddText("xp+95 yp+4", "Hold for:")
+AutoclickerGui.AddEdit("xp+45 yp-4 w50 vGeneral_ClickHoldDownDuration_NumEdit Limit Number", "0")
+AutoclickerGui.AddText("xp+54 yp+4", "ms")
 
 AutoclickerGui.AddGroupBox("xs w226 h73 Section", "Click intervals")
 
