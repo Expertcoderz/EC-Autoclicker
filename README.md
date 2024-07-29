@@ -15,6 +15,7 @@ Executables provided in Releases are compiled using [Ahk2Exe](https://github.com
 - Fixed or randomized click intervals
 - Left/right/middle click
 - Single/double/triple click
+- Hold-down
 - Pre-start delay
 - Automatic stop
   - after a specific number of clicks;
