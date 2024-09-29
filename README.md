@@ -1,7 +1,7 @@
 # EC Autoclicker
 
 The EC (Expertcoderz) Autoclicker is an open-source, advanced autoclicking 
-tility for Windows, written fully in [AutoHotkey](https://www.autohotkey.com/)
+utility for Windows, written fully in [AutoHotkey](https://www.autohotkey.com/)
 v2. It aims to provide a large variety of configurability and functionality
 never before seen in other general-purpose autoclicking tools.
 
