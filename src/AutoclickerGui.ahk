@@ -25,6 +25,8 @@ makeCheckable(name, checkbox, callback := 0, controls := []) {
 
 AutoclickerGui := Gui("+AlwaysOnTop", "EC Autoclicker")
 
+AutoclickerGui.OnEvent("Close", Close)
+
 FileMenu := Menu()
 FileMenu.Add(
     SZ_TABLE.Menu_File_RunAsAdmin
