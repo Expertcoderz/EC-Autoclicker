@@ -5,7 +5,7 @@
 
 ;@Ahk2Exe-SetCompanyName Expertcoderz
 ;@Ahk2Exe-SetDescription EC Autoclicker
-;@Ahk2Exe-SetVersion 1.2.3
+;@Ahk2Exe-SetVersion 1.2.4
 
 A_IconTip := "EC Autoclicker"
 
