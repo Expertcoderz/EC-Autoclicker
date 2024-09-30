@@ -413,6 +413,8 @@ Message: {}
     }
 }
 
+refreshProfileSelectionLists()
+
 RegCreateKey REG_KEY_PATH "\Profiles"
 
 if A_Args.Length > 0 && A_Args[1] = "/profile" {
@@ -425,10 +427,10 @@ if A_Args.Length > 0 && A_Args[1] = "/profile" {
 
     if !assertProfileExists(A_Args[2])
         ExitApp
+
+    Collapse()
  
     ProfileLoad(A_Args[2])
     Start()
-    ExitApp
-}
-
-refreshProfileSelectionLists()
+} else
+    AutoclickerGui.Show()

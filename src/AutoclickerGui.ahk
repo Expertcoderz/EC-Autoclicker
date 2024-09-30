@@ -37,6 +37,7 @@ if A_IsAdmin {
     FileMenu.Disable(SZ_TABLE.Menu_File_RunAsAdmin)
     FileMenu.Rename(SZ_TABLE.Menu_File_RunAsAdmin, "Running as administrator")
 }
+FileMenu.Add(SZ_TABLE.Menu_File_Collapse, Collapse)
 FileMenu.Add(SZ_TABLE.Menu_File_Logs, LogsOpen)
 FileMenu.Add(SZ_TABLE.Menu_File_Exit, Close)
 

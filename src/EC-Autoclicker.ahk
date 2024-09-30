@@ -7,6 +7,8 @@
 ;@Ahk2Exe-SetDescription EC Autoclicker
 ;@Ahk2Exe-SetVersion 1.2.3
 
+A_IconTip := "EC Autoclicker"
+
 GITHUB_REPO := "Expertcoderz/EC-Autoclicker"
 
 FILE_EXT := ".ac-profile"
@@ -23,6 +25,12 @@ are_hotkeys_active := true
 ; This dictionary stores text used for GUI controls that may (potentially) be
 ; referenced after the controls' creation, e.g. as in MenuBar.Disable().
 SZ_TABLE := {
+    ; Tray Menu
+    TrayMenu_Start: "&Start",
+    TrayMenu_Stop: "Sto&p",
+    TrayMenu_Open: "&Open GUI",
+    TrayMenu_Exit: "E&xit",
+
     ; Menus
     Menu_File: "&File",
     Menu_Profiles: "&Profiles",
@@ -30,6 +38,7 @@ SZ_TABLE := {
     Menu_Help: "&Help",
     ; File Menu
     Menu_File_RunAsAdmin: "Run As &Administrator",
+    Menu_File_Collapse: "&Collapse to tray",
     Menu_File_Logs: "View &Logs",
     Menu_File_Exit: "E&xit",
     ; Profiles Menu
@@ -71,6 +80,22 @@ SZ_TABLE := {
 RadioGroups := {}
 Checkables := {}
 
+Collapse(*) {
+    A_IconHidden := false
+    AutoclickerGui.Hide()
+}
+Expand(*) {
+    A_IconHidden := true
+    AutoclickerGui.Show()
+}
+
+A_TrayMenu.Delete()
+A_TrayMenu.Add(SZ_TABLE.TrayMenu_Start, Start)
+A_TrayMenu.Add(SZ_TABLE.TrayMenu_Stop, Stop)
+A_TrayMenu.Add()
+A_TrayMenu.Add(SZ_TABLE.TrayMenu_Open, Expand)
+A_TrayMenu.Add(SZ_TABLE.TrayMenu_Exit, Close)
+
 ; The order in which script files are included is important.
 #Include AutoclickerGui.ahk
 #Include Util.ahk
@@ -79,10 +104,6 @@ Checkables := {}
 #Include Profiles.ahk
 #Include Options.ahk
 #Include About.ahk
-
-AutoclickerGui.Show("x0")
-add_log("Showed main GUI")
-
 #Include Updater.ahk
 
 Loop {
