@@ -67,16 +67,19 @@ Autoclicker, regardless of whether it is the same as the released version.
 
 ## Headless Operation
 
-To run EC Autoclicker headlessly (without a GUI), first create a profile with
-the desired configuration. Then, the `/profile` command-line switch followed by
-the name of the profile can be passed to EC Autoclicker as follows:
+Headless (no-GUI) mode can be entered by selecting `File > Collapse to tray` in
+the main GUI.
+
+Alternatively, to launch straight into headless mode, first create a profile
+with the desired configuration. Then, the `/profile` command-line switch
+followed by the name of the profile can be passed to EC Autoclicker as follows:
 
 ```cmd
 .\EC-Autoclicker.exe /profile MyProfile
 ```
 
-Note that, in headless mode, any hotkeys assigned the _Stop Autoclicker_ action
-will function equivalently to _Close Autoclicker_ when triggered.
+When running in headless mode, EC Autoclicker is represented by an icon on the
+taskbar tray which can be right-clicked to display a menu of options.
 
 ## Notes
 
