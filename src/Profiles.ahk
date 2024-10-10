@@ -432,5 +432,7 @@ if A_Args.Length > 0 && A_Args[1] = "/profile" {
  
     ProfileLoad(A_Args[2])
     Start()
-} else
+} else if RegRead(REG_KEY_PATH, "StartCollapsed", false)
+    Collapse()
+else
     AutoclickerGui.Show()

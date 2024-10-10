@@ -50,6 +50,7 @@ SZ_TABLE := {
     Menu_Options_MinButtonVisible: "&Minimize Button Visible",
     Menu_Options_EscToClose: "&ESC To Close",
     Menu_Options_HotkeysActive: "&Hotkeys Active",
+    Menu_Options_StartCollapsed: "&Start Collapsed",
     Menu_Options_AutoUpdate: "Automatic &Updates",
     Menu_Options_ResetToDefault: "&Reset All Options",
     ; Help Menu

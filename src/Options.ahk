@@ -26,6 +26,12 @@ PersistentOptions := [
         Toggler: (optionInfo) => AutoclickerGui.OnEvent("Escape", Close, optionInfo.CurrentSetting ? 1 : 0)
     },
     {
+        ValueName: "StartCollapsed",
+        Default: false,
+        Text: SZ_TABLE.Menu_Options_StartCollapsed,
+        Toggler: (*) => 0
+    },
+    {
         ValueName: "HotkeysActive",
         Default: true,
         Text: SZ_TABLE.Menu_Options_HotkeysActive,
