@@ -14,13 +14,15 @@ GITHUB_REPO := "Expertcoderz/EC-Autoclicker"
 FILE_EXT := ".ac-profile"
 REG_KEY_PATH := "HKCU\Software\Expertcoderz\Autoclicker"
 
+; Global variables that must be referenced in multiple script files.
 is_autoclicking := false
-
 is_simplified_view_on := false
 is_always_on_top_on := true
-
-configured_hotkeys := []
 are_hotkeys_active := true
+configured_hotkeys := []
+
+RadioGroups := {}
+Checkables := {}
 
 ; This dictionary stores text used for GUI controls that may (potentially) be
 ; referenced after the controls' creation, e.g. as in MenuBar.Disable().
@@ -31,7 +33,7 @@ SZ_TABLE := {
     TrayMenu_Open: "&Open GUI",
     TrayMenu_Exit: "E&xit",
 
-    ; Menus
+    ; Window Menu Bar
     Menu_File: "&File",
     Menu_Profiles: "&Profiles",
     Menu_Options: "&Options",
@@ -58,7 +60,8 @@ SZ_TABLE := {
     Menu_Help_Report: "&Report Bug",
     Menu_Help_Update: "&Check for Updates",
     Menu_Help_About: "&About",
-    ; Tabs
+
+    ; Window Tabs
     Tabs: {
         General: "General",
         Scheduling: "Scheduling",
@@ -70,16 +73,8 @@ SZ_TABLE := {
         None: "&User-controlled",
         Point: "Po&int",
         Box: "&Box"
-    },
-    ; Hotkeys
-    Hotkeys: {
-        Start: "Start",
-        Stop: "Stop"
     }
 }
-
-RadioGroups := {}
-Checkables := {}
 
 Collapse(*) {
     A_IconHidden := false
@@ -107,6 +102,7 @@ A_TrayMenu.Add(SZ_TABLE.TrayMenu_Exit, Close)
 #Include About.ahk
 #Include Updater.ahk
 
+; Loop to update the status bar in the main window.
 Loop {
     CoordMode "Mouse", AutoclickerGui["Positioning_RelativeTo_Radio"].Value = 1 ? "Screen" : "Client"
     MouseGetPos &mouseX, &mouseY

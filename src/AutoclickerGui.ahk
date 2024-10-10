@@ -433,7 +433,6 @@ Hotkeys_RemoveHotkey(*) {
 
 Hotkeys_ClearAllHotkeys(*) {
     for hotkeyData in configured_hotkeys {
-        configured_hotkeys.Delete(A_Index)
         Hotkey hotkeyData.Hotkey, "Off"
         add_log("Removed hotkey: " hotkeyData.HotkeyText)
     }

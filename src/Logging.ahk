@@ -1,13 +1,13 @@
 ; Logging functionality and GUI to view logs
 
-program_logs := []
+logs := []
 
 add_log(text) {
     OutputDebug text
-    global program_logs
-    program_logs.Push({ Timestamp: A_Now, Message: text })
-    if program_logs.Length > 100
-        program_logs.RemoveAt(1)
+    global logs
+    logs.Push({ Timestamp: A_Now, Message: text })
+    if logs.Length > 100
+        logs.RemoveAt(1)
 }
 
 LogsOpen(*) {
@@ -38,9 +38,8 @@ LogsOpen(*) {
     RefreshLogs(*) {
         LogsGui["List"].Delete()
 
-        for data in program_logs {
-            LogsGui["List"].Add(, FormatTime(data.Timestamp, "HH:mm:ss"), data.Message)
-        }
+        for entry in logs
+            LogsGui["List"].Add(, FormatTime(entry.Timestamp, "HH:mm:ss"), entry.Message)
 
         LogsGui["List"].ModifyCol()
     }
