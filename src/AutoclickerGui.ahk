@@ -407,6 +407,7 @@ Hotkeys_AddHotkey(*) {
         }
         add_log("Added hotkey: " hotkeyText)
         Hotkeys_updateHotkeyBindings()
+        Hotkeys_ItemSelectionChanged()
     }
 }
 
@@ -438,4 +439,5 @@ Hotkeys_ClearAllHotkeys(*) {
     }
     configured_hotkeys.Length := 0
     Hotkeys_updateHotkeyBindings()
+    Hotkeys_ItemSelectionChanged()
 }
