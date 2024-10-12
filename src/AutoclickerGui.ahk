@@ -214,7 +214,7 @@ makeRadioGroup(
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Hotkeys)
 
-AutoclickerGui.AddListView("w226 h140 vHotkeys_HotkeyList_ListView -LV0x10 Sort", ["Action", "Global", "Hotkey"])
+AutoclickerGui.AddListView("w226 h140 vHotkeys_HotkeyList_ListView -LV0x10 NoSortHdr", ["Action", "Global", "Hotkey"])
     .OnEvent("ItemSelect", Hotkeys_ItemSelectionChanged)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(1, 50)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(2, 42)
@@ -412,20 +412,16 @@ Hotkeys_AddHotkey(*) {
 }
 
 Hotkeys_RemoveHotkey(*) {
+    add_log "Starting hotkeys removal"
     local rowNum := 0
+    local nRemoved := 0
     Loop {
         rowNum := AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetNext(rowNum)
         if !rowNum
             break
-
-        for hotkeyData in configured_hotkeys {
-            if hotkeyData.HotkeyText = AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetText(rowNum, 3) {
-                configured_hotkeys.RemoveAt(A_Index)
-                Hotkey hotkeyData.Hotkey, "Off"
-                add_log("Removed hotkey: " hotkeyData.HotkeyText)
-                break
-            }
-        }
+        add_log("Removing hotkey: " configured_hotkeys[rowNum - nRemoved].HotkeyText)
+        Hotkey configured_hotkeys[rowNum - nRemoved].Hotkey, "Off"
+        configured_hotkeys.RemoveAt(rowNum - nRemoved++)
     }
 
     Hotkeys_updateHotkeyBindings()
