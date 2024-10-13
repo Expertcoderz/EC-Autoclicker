@@ -172,45 +172,18 @@ AutoclickerGui.AddDropDownList("xp+62 yp-2 w140 vScheduling_PostStopAction_DropD
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Positioning)
 
-AutoclickerGui.AddGroupBox("w226 h45 Section", "Boundary")
-makeRadioGroup(
-    "Positioning_BoundaryMode_Radio"
-    , [
-        AutoclickerGui.AddRadio("xs+10 yp+20 v Checked", SZ_TABLE.Positioning_Boundary_Mode.None),
-        AutoclickerGui.AddRadio("yp", SZ_TABLE.Positioning_Boundary_Mode.Point),
-        AutoclickerGui.AddRadio("yp", SZ_TABLE.Positioning_Boundary_Mode.Box)
-    ]
-    , Positioning_ChangedModeSelection
-)
+AutoclickerGui.AddListView("w226 h140 vPositioning_TargetList_ListView -LV0x10 NoSortHdr", ["#", "Type", "Coordinates"])
+    .OnEvent("ItemSelect", Positioning_ItemSelectionChanged)
+AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(1, 25)
+AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(2, 40)
+AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(3, 157)
 
-PerBoundaryConfigControls := {
-    %SZ_TABLE.Positioning_Boundary_Mode.None%: [],
-    %SZ_TABLE.Positioning_Boundary_Mode.Point%: [
-        AutoclickerGui.AddText("xs+10 ys+55 Hidden", "X:"),
-        AutoclickerGui.AddEdit("xp+20 yp-2 w30 vPositioning_XPos_NumEdit Limit Number Hidden", "0"),
-        AutoclickerGui.AddText("xp+45 yp+2 Hidden", "Y:"),
-        AutoclickerGui.AddEdit("xp+20 yp-2 w30 vPositioning_YPos_NumEdit Limit Number Hidden", "0")
-    ],
-    %SZ_TABLE.Positioning_Boundary_Mode.Box%: [
-        AutoclickerGui.AddText("xs+10 ys+55 Hidden", "X min:"),
-        AutoclickerGui.AddEdit("xp+35 yp-2 w30 vPositioning_XMinPos_NumEdit Limit Number Hidden", "0"),
-        AutoclickerGui.AddText("xp+45 yp+2 Hidden", "X max:"),
-        AutoclickerGui.AddEdit("xp+35 yp-2 w30 vPositioning_XMaxPos_NumEdit Limit Number Hidden", "0"),
-        AutoclickerGui.AddText("xs+10 yp+30 Hidden", "Y min:"),
-        AutoclickerGui.AddEdit("xp+35 yp-2 w30 vPositioning_YMinPos_NumEdit Limit Number Hidden", "0"),
-        AutoclickerGui.AddText("xp+45 yp+2 Hidden", "Y max:"),
-        AutoclickerGui.AddEdit("xp+35 yp-2 w30 vPositioning_YMaxPos_NumEdit Limit Number Hidden", "0")
-    ]
-}
-
-AutoclickerGui.AddGroupBox("xs yp+44 w226 h45 Section", "Mouse position relative to")
-makeRadioGroup(
-    "Positioning_RelativeTo_Radio"
-    , [
-        AutoclickerGui.AddRadio("xs+10 yp+20 vPositioning_RelativeTo_Radio Checked", "Entire &screen"),
-        AutoclickerGui.AddRadio("yp", "Focused &window")
-    ]
-)
+AutoclickerGui.AddButton("xm+10 yp+147 w72 vPositioning_AddTarget_Button", "&Add")
+    .OnEvent("Click", Positioning_AddTarget)
+AutoclickerGui.AddButton("yp wp vPositioning_RemoveTarget_Button Disabled", "&Remove")
+    .OnEvent("Click", Positioning_RemoveTarget)
+AutoclickerGui.AddButton("yp wp vPositioning_ClearAllTargets_Button", "&Clear All")
+    .OnEvent("Click", Positioning_ClearAllTargets)
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Hotkeys)
 
@@ -282,11 +255,160 @@ Scheduling_StopAfterTimeToggled(*) {
     Scheduling_updateStopAfter()
 }
 
-Positioning_ChangedModeSelection(radio, *) {
-    for key, list in PerBoundaryConfigControls.OwnProps() {
-        for ctrl in list
-            ctrl.Visible := key = radio.Text
+Positioning_updateTargetsList(*) {
+    AutoclickerGui["Positioning_TargetList_ListView"].Delete()
+
+    local cumulativeApplicableClickCount := 1
+    for targetData in configured_targets {
+        AutoclickerGui["Positioning_TargetList_ListView"].Add(
+            , cumulativeApplicableClickCount
+            , targetData.Type = 1 ? "Point" : "Box"
+            , (targetData.Type = 1 ? targetData.X ", " targetData.Y
+            : targetData.XMin ", " targetData.YMin " -- " targetData.XMax ", " targetData.YMax)
+            . (targetData.RelativeTo = 1 ? " (ABS)" : " (REL)")
+        )
+        cumulativeApplicableClickCount += targetData.ApplicableClickCount
     }
+}
+
+Positioning_ItemSelectionChanged(*) {
+    AutoclickerGui["Positioning_RemoveTarget_Button"].Enabled := AutoclickerGui["Positioning_TargetList_ListView"].GetNext()
+}
+
+Positioning_AddTarget(*) {
+    static TargetAdderGui
+    static PerTypeCoordControls
+    if !IsSet(TargetAdderGui) {
+        TargetAdderGui := Gui("-SysMenu +Owner" AutoclickerGui.Hwnd, "Add Target")
+
+        TargetAdderGui.OnEvent("Escape", hideOwnedGui)
+        TargetAdderGui.OnEvent("Close", hideOwnedGui)
+
+        TargetAdderGui.AddText("ym+2", "Applies for:")
+        TargetAdderGui.AddEdit("xp+56 yp-2 w45 vTargetApplicableClickCountEdit Limit Number", "1")
+        TargetAdderGui.AddText("xp+48 yp+2", "contiguous click(s)")
+
+        TargetAdderGui.AddGroupBox("xm w226 h110 Section", "Coordinates")
+        TargetAdderGui.AddRadio("xs+10 yp+20 vTargetTypePointRadio Checked", SZ_TABLE.Positioning_TargetType.Point)
+            .OnEvent("Click", TargetTypeSelectionChanged)
+        TargetAdderGui.AddRadio("yp vTargetTypeBoxRadio", SZ_TABLE.Positioning_TargetType.Box)
+            .OnEvent("Click", TargetTypeSelectionChanged)
+
+        PerTypeCoordControls := {
+            TargetTypePointRadio: [
+                TargetAdderGui.AddText("xs+10 ys+50 Hidden", "X:"),
+                TargetAdderGui.AddEdit("xp+20 yp-2 w30 vTargetXPosNumEdit Limit Number Hidden", "0"),
+                TargetAdderGui.AddText("xp+45 yp+2 Hidden", "Y:"),
+                TargetAdderGui.AddEdit("xp+20 yp-2 w30 vTargetYPosNumEdit Limit Number Hidden", "0")
+            ],
+            TargetTypeBoxRadio: [
+                TargetAdderGui.AddText("xs+10 ys+50 Hidden", "X min:"),
+                TargetAdderGui.AddEdit("xp+34 yp-2 w30 vTargetXMinPosNumEdit Limit Number Hidden", "0"),
+                TargetAdderGui.AddText("xp+45 yp+2 Hidden", "Y min:"),
+                TargetAdderGui.AddEdit("xp+35 yp-2 w30 vTargetYMinPosNumEdit Limit Number Hidden", "0"),
+                TargetAdderGui.AddText("xs+10 yp+30 Hidden", "X max:"),
+                TargetAdderGui.AddEdit("xp+34 yp-2 w30 vTargetXMaxPosNumEdit Limit Number Hidden", "0"),
+                TargetAdderGui.AddText("xp+45 yp+2 Hidden", "Y max:"),
+                TargetAdderGui.AddEdit("xp+35 yp-2 w30 vTargetYMaxPosNumEdit Limit Number Hidden", "0")
+            ]
+        }
+
+        TargetAdderGui.AddGroupBox("xs yp+40 w145 h59 Section", "Position relative to")
+        TargetAdderGui.AddRadio("xs+10 yp+20 vTargetRelativeToScreenRadio Checked", "Entire &screen (ABS)")
+            .OnEvent("Click", TargetRelativeToSelectionChanged)
+        TargetAdderGui.AddRadio("xp vTargetRelativeToFocused", "Focused &window (REL)")
+            .OnEvent("Click", TargetRelativeToSelectionChanged)
+
+        TargetAdderGui.AddButton("ys+6 w80 Default", "OK")
+            .OnEvent("Click", Submit)
+        TargetAdderGui.AddButton("xp wp", "Cancel")
+            .OnEvent("Click", (*) => hideOwnedGui(TargetAdderGui))
+
+        TargetAdderGui.AddStatusBar("vStatusBar")
+        TargetAdderGui["StatusBar"].SetParts(40)
+        TargetAdderGui["StatusBar"].SetText(" (ABS)")
+        TargetAdderGui["StatusBar"].SetText("X=? Y=?", 2, 2)
+
+        add_log("Created target adder GUI")
+
+        TargetTypeSelectionChanged(TargetAdderGui["TargetTypePointRadio"])
+    }
+
+    TargetAdderGui["TargetApplicableClickCountEdit"].Value := 1
+    TargetAdderGui["TargetXPosNumEdit"].Value := 0
+    TargetAdderGui["TargetYPosNumEdit"].Value := 0
+    TargetAdderGui["TargetXMinPosNumEdit"].Value := 0
+    TargetAdderGui["TargetYMinPosNumEdit"].Value := 0
+    TargetAdderGui["TargetXMaxPosNumEdit"].Value := 0
+    TargetAdderGui["TargetYMaxPosNumEdit"].Value := 0
+    showGuiAtAutoclickerGuiPos(TargetAdderGui)
+    SetTimer updateTargetAdderGuiStatusBar, 100
+
+    updateTargetAdderGuiStatusBar() {
+        CoordMode "Mouse", TargetAdderGui["TargetRelativeToScreenRadio"].Value = 1 ? "Screen" : "Client"
+        local mouseX
+        local mouseY
+        MouseGetPos &mouseX, &mouseY
+        TargetAdderGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 2, 2)
+        if !ControlGetVisible(TargetAdderGui.Hwnd, "ahk_id " TargetAdderGui.Hwnd)
+            SetTimer , 0 ; mark timer for deletion
+    }
+
+    TargetTypeSelectionChanged(radio, *) {
+        for key, list in PerTypeCoordControls.OwnProps() {
+            for ctrl in list
+                ctrl.Visible := key = radio.Name
+        }
+    }
+
+    TargetRelativeToSelectionChanged(radio, *) {
+        TargetAdderGui["StatusBar"].SetText(radio.Name = "TargetRelativeToScreenRadio" ? " (ABS)" : " (REL)")
+    }
+
+    Submit(*) {
+        hideOwnedGui(TargetAdderGui)
+
+        local targetData := {
+            ApplicableClickCount: TargetAdderGui["TargetApplicableClickCountEdit"].Value,
+            Type: TargetAdderGui["TargetTypePointRadio"].Value = 1 ? 1 : 2,
+            RelativeTo: TargetAdderGui["TargetRelativeToScreenRadio"].Value = 1 ? 1 : 2
+        }
+        if TargetAdderGui["TargetTypePointRadio"].Value = 1 {
+            targetData.X := Number(TargetAdderGui["TargetXPosNumEdit"].Value)
+            targetData.Y := Number(TargetAdderGui["TargetYPosNumEdit"].Value)
+        } else {
+            targetData.XMin := Number(TargetAdderGui["TargetXMinPosNumEdit"].Value)
+            targetData.YMin := Number(TargetAdderGui["TargetYMinPosNumEdit"].Value)
+            targetData.XMax := Number(TargetAdderGui["TargetXMaxPosNumEdit"].Value)
+            targetData.YMax := Number(TargetAdderGui["TargetYMaxPosNumEdit"].Value)
+        }
+        configured_targets.Push(targetData)
+
+        Positioning_updateTargetsList()
+        Positioning_ItemSelectionChanged()
+    }
+}
+
+Positioning_RemoveTarget(*) {
+    add_log "Starting targets removal"
+    local rowNum := 0
+    local nRemoved := 0
+    Loop {
+        rowNum := AutoclickerGui["Positioning_TargetList_ListView"].GetNext(rowNum)
+        if !rowNum
+            break
+        add_log "Removing target #" rowNum
+        configured_targets.RemoveAt(rowNum - nRemoved++)
+    }
+
+    Positioning_updateTargetsList()
+    Positioning_ItemSelectionChanged()
+}
+
+Positioning_ClearAllTargets(*) {
+    configured_targets.Length := 0
+    Positioning_updateTargetsList()
+    Positioning_ItemSelectionChanged()
 }
 
 Hotkeys_updateHotkeyBindings() {

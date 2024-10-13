@@ -19,6 +19,7 @@ is_autoclicking := false
 is_simplified_view_on := false
 is_always_on_top_on := true
 are_hotkeys_active := true
+configured_targets := []
 configured_hotkeys := []
 
 RadioGroups := {}
@@ -69,10 +70,9 @@ SZ_TABLE := {
         Hotkeys: "Hotkeys"
     },
     ; Positioning
-    Positioning_Boundary_Mode: {
-        None: "&User-controlled",
+    Positioning_TargetType: {
         Point: "Po&int",
-        Box: "&Box"
+        Box: "&Box (random distribution)"
     }
 }
 
@@ -102,10 +102,13 @@ A_TrayMenu.Add(SZ_TABLE.TrayMenu_Exit, Close)
 #Include About.ahk
 #Include Updater.ahk
 
-; Loop to update the status bar in the main window.
-Loop {
-    CoordMode "Mouse", AutoclickerGui["Positioning_RelativeTo_Radio"].Value = 1 ? "Screen" : "Client"
+CoordMode "Mouse", "Screen"
+SetTimer updateAutoclickerGuiStatusBar, 100
+
+updateAutoclickerGuiStatusBar() {
+    local mouseX
+    local mouseY
     MouseGetPos &mouseX, &mouseY
     AutoclickerGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 3, 2)
-    Sleep 100
 }
+

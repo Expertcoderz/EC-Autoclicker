@@ -14,8 +14,6 @@ Start(*) {
     local buttonClickData := { 1: "L", 2: "R", 3: "M" }.%currentConfig.General_MouseButton_Radio%
         . " " ({ 1: 1, 2: 2, 3: 3, 4: 0 }.%currentConfig.General_ClickCount_DropDownList%)
 
-    CoordMode "Mouse", currentConfig.Positioning_RelativeTo_Radio = 1 ? "Screen" : "Client"
-
     local clickCount := 0
     local timeStarted := A_TickCount
 
@@ -33,18 +31,29 @@ Start(*) {
     if currentConfig.Scheduling_PreStartDelay_Checkbox
         Sleep currentConfig.Scheduling_PreStartDelay_NumEdit
 
+    local clickTargetIndex := 1
+    local clickTargetCount := 1
+
     while is_autoclicking {
         if currentConfig.General_SoundBeep_Checkbox
             SoundBeep currentConfig.General_SoundBeep_NumEdit
 
-        local coords
-        switch currentConfig.Positioning_BoundaryMode_Radio {
-            case 1: coords := ""
-            case 2: coords := currentConfig.Positioning_XPos_NumEdit " " currentConfig.Positioning_YPos_NumEdit
-            case 3:
-                coords := Random(currentConfig.Positioning_XMinPos_NumEdit, currentConfig.Positioning_XMaxPos_NumEdit)
-                    . " " Random(currentConfig.Positioning_YMinPos_NumEdit, currentConfig.Positioning_YMaxPos_NumEdit)
-        }
+        if configured_targets.Length > 0 {
+            local clickTargetData := configured_targets[clickTargetIndex]
+
+            if ++clickTargetCount > clickTargetData.ApplicableClickCount {
+                clickTargetCount := 1
+                if ++clickTargetIndex > configured_targets.Length
+                    clickTargetIndex := 1
+            }
+
+            CoordMode "Mouse", clickTargetData.RelativeTo = 1 ? "Screen" : "Client"
+
+            local coords := clickTargetData.Type = 1 ? clickTargetData.X " " clickTargetData.Y
+                    : (Random(clickTargetData.XMin, clickTargetData.XMax)
+                    . " " Random(clickTargetData.YMin, clickTargetData.YMax))
+        } else
+            local coords := ""
 
         if currentConfig.General_ClickHoldDownDuration_NumEdit {
             Click coords, buttonClickData, "Down"
@@ -55,10 +64,6 @@ Start(*) {
 
         AutoclickerGui["StatusBar"].SetText(" Clicks: " (++clickCount))
         AutoclickerGui["StatusBar"].SetText("Elapsed: " Round((A_TickCount - timeStarted) / 1000, 2), 2)
-
-        local mouseX, mouseY
-        MouseGetPos &mouseX, &mouseY
-        AutoclickerGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 3, 2)
 
         if stopCriteria.Length > 0 {
             local passedCriteria := 0

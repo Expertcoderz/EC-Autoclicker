@@ -82,7 +82,42 @@ ProfileLoad(profileName, *) {
         Loop Reg REG_KEY_PATH "\Profiles\" profileName {
             local value := RegRead()
 
-            if A_LoopRegName = "Hotkeys" {
+            switch A_LoopRegName {
+            case "Targets":
+                add_log("Update Targets")
+                Positioning_ClearAllTargets()
+
+                Loop Parse value, "`n" {
+                    if !A_LoopField
+                        continue
+
+                    local targetDataMatch
+                    RegExMatch A_LoopField, "^(?P<ApplicableClickCount>.+?)%(?P<Type>\d?)"
+                        . "%(?P<Coords>.+?)%(?P<RelativeTo>\d)$", &targetDataMatch
+
+                    local targetData := {
+                        ApplicableClickCount: targetDataMatch["ApplicableClickCount"],
+                        Type: targetDataMatch["Type"],
+                        RelativeTo: targetDataMatch["RelativeTo"]
+                    }
+
+                    local coords := StrSplit(targetDataMatch["Coords"], ",")
+                    switch targetDataMatch["Type"] {
+                    case 1:
+                        targetData.X := coords[1],
+                        targetData.Y := coords[2]
+                    case 2:
+                        targetData.XMin := coords[1],
+                        targetData.YMin := coords[2],
+                        targetData.XMax := coords[3],
+                        targetData.YMax := coords[4]
+                    }
+
+                    configured_targets.Push(targetData)
+                }
+
+                Positioning_updateTargetsList()
+            case "Hotkeys":
                 add_log("Update Hotkeys")
                 Hotkeys_ClearAllHotkeys()
 
@@ -102,7 +137,7 @@ ProfileLoad(profileName, *) {
                 }
 
                 Hotkeys_updateHotkeyBindings()
-            } else {
+            default:
                 add_log("Update: " A_LoopRegName " (value=" value ")")
                 local ctrl := AutoclickerGui[A_LoopRegName]
 
@@ -184,6 +219,18 @@ ProfileCreate(*) {
                 , REG_KEY_PATH "\Profiles\" profileName
                 , ctrlName
         }
+
+        local serializedTargets := ""
+        for targetData in configured_targets
+            serializedTargets .= targetData.ApplicableClickCount "%" targetData.Type
+                . "%" (targetData.Type = 1 ? targetData.X "," targetData.Y
+                : targetData.XMin "," targetData.YMin "," targetData.XMax "," targetData.YMax)
+                . "%" targetData.RelativeTo "`n"
+
+        RegWrite serializedTargets
+            , "REG_MULTI_SZ"
+            , REG_KEY_PATH "\Profiles\" profileName
+            , "Targets"
 
         local serializedHotkeys := ""
         for hotkeyData in configured_hotkeys
@@ -335,8 +382,8 @@ ProfileManage(*) {
 
         local formatted := ""
         Loop Reg REG_KEY_PATH "\Profiles\" selectedProfileName {
-            if A_LoopRegName = "Hotkeys"
-                formatted .= "Hotkeys=" StrReplace(RegRead(), "`n", "`t") "`n"
+            if A_LoopRegName = "Targets" || A_LoopRegName = "Hotkeys"
+                formatted .= A_LoopRegName "=" StrReplace(RegRead(), "`n", "`t") "`n"
             else
                 formatted .= A_LoopRegName "=" RegRead() "`n"
         }
@@ -382,16 +429,11 @@ ProfileManage(*) {
                     RegExMatch A_LoopField, "^(?P<Name>\w+?)=(?P<Value>.+)$", &configMatch
                     add_log("Read: " configMatch["Name"] " = " configMatch["Value"])
 
-                    if configMatch["Name"] = "Hotkeys"
-                        RegWrite StrReplace(configMatch["Value"], "`t", "`n")
-                            , "REG_MULTI_SZ"
-                            , REG_KEY_PATH "\Profiles\" profileName
-                            , "Hotkeys"
-                    else
-                        RegWrite configMatch["Value"]
-                            , configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
-                            , REG_KEY_PATH "\Profiles\" profileName
-                            , configMatch["Name"]
+                    RegWrite (configMatch["Name"] = "Targets" || configMatch["Name"] = "Hotkeys"
+                        ? StrReplace(configMatch["Value"], "`t", "`n") : configMatch["Value"])
+                        , configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
+                        , REG_KEY_PATH "\Profiles\" profileName
+                        , configMatch["Name"]
                 }
             } catch as err {
                 add_log("Import Profile error: " err.Message)
