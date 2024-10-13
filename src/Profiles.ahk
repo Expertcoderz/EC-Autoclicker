@@ -78,8 +78,9 @@ ProfileLoad(profileName, *) {
         return
     }
 
-    try {
-        Loop Reg REG_KEY_PATH "\Profiles\" profileName {
+    Loop Reg REG_KEY_PATH "\Profiles\" profileName {
+        profileItemLoad:
+        try {
             local value := RegRead()
 
             switch A_LoopRegName {
@@ -126,7 +127,8 @@ ProfileLoad(profileName, *) {
                         continue
 
                     local hotkeyDataMatch
-                    RegExMatch A_LoopField, "^(?P<Hotkey>.+?)%(?P<Scope>\d)%(?P<Action>\d)$", &hotkeyDataMatch
+                    RegExMatch A_LoopField, "^(?P<Hotkey>.+?)%(?P<Scope>\d)%(?P<Action>\d)$"
+                        , &hotkeyDataMatch
 
                     configured_hotkeys.Push({
                         Hotkey: hotkeyDataMatch["Hotkey"],
@@ -155,18 +157,24 @@ ProfileLoad(profileName, *) {
                     }
                 }
             }
+        } catch as err {
+            add_log("Load Profile error: " err.Message)
+            switch MsgBox(Format("
+    (
+    An error occurred whilst loading the profile '{}'.
+    The profile is likely from an older version of EC Autoclicker.
+
+    Key: {}
+    Message: {}
+    )", profileName, A_LoopRegName, err.Message)
+            , "Load Profile", "CancelTryAgainContinue Iconx 262144") {
+            case "Cancel":
+                refreshProfileSelectionLists()
+                return
+            case "TryAgain":
+                goto profileItemLoad
+            }
         }
-
-        add_log("Completed profile load")
-    } catch as err {
-        add_log("Load Profile error: " err.Message)
-        MsgBox Format("
-(
-An error occurred whilst loading the profile '{}'.
-This is likely due to corrupt data.
-
-Message: {}
-)", profileName, err.Message), "Load Profile", "Iconx 8192"
     }
 }
 
