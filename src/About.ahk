@@ -9,7 +9,7 @@ AboutOpen(*) {
         AboutGui.OnEvent("Escape", hideOwnedGui)
         AboutGui.OnEvent("Close", hideOwnedGui)
 
-        AboutGui.AddPicture("w40 h40", A_IsCompiled ? A_ScriptFullPath : A_ProgramFiles "\AutoHotkey\v2\AutoHotkey.exe")
+        AboutGui.AddPicture("w40 h40", A_IsCompiled ? A_ScriptFullPath : A_AhkPath)
         AboutGui.SetFont("s12 bold")
         AboutGui.AddText("xp+50 yp", "EC Autoclicker version " (A_IsCompiled ? SubStr(FileGetVersion(A_ScriptFullPath), 1, -2) : "?"))
         AboutGui.SetFont()
