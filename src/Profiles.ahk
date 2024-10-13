@@ -208,7 +208,7 @@ ProfileManage(*) {
         ProfilesGui.OnEvent("Escape", hideOwnedGui)
         ProfilesGui.OnEvent("Close", hideOwnedGui)
 
-        ProfilesGui.AddListView("w150 r10 vProfileList -Hdr -Multi +Sort", ["Profile Name"])
+        ProfilesGui.AddListView("w150 h162 vProfileList -Hdr -Multi +Sort", ["Profile Name"])
             .OnEvent("ItemSelect", ProfileListSelectionChanged)
         ProfilesGui.AddButton("yp w100 vDeleteButton Disabled", "&Delete")
             .OnEvent("Click", ProfileDelete)
