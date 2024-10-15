@@ -30,7 +30,8 @@ AutoclickerGui.OnEvent("Close", Close)
 FileMenu := Menu()
 FileMenu.Add(
     SZ_TABLE.Menu_File_RunAsAdmin
-    , (*) => Run('*RunAs "' (A_IsCompiled ? A_ScriptFullPath '" /restart' : A_AhkPath '" /restart "' A_ScriptFullPath '"'))
+    , (*) => Run('*RunAs "' (A_IsCompiled ? A_ScriptFullPath '" /restart'
+        : A_AhkPath '" /restart "' A_ScriptFullPath '"'))
 )
 FileMenu.SetIcon(SZ_TABLE.Menu_File_RunAsAdmin, "imageres.dll", -78)
 if A_IsAdmin {
@@ -172,7 +173,8 @@ AutoclickerGui.AddDropDownList("xp+62 yp-2 w140 vScheduling_PostStopAction_DropD
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Positioning)
 
-AutoclickerGui.AddListView("w226 h140 vPositioning_TargetList_ListView -LV0x10 NoSortHdr", ["#", "Type", "Coordinates"])
+AutoclickerGui.AddListView("w226 h140 vPositioning_TargetList_ListView -LV0x10 NoSortHdr"
+    , ["#", "Type", "Coordinates"])
     .OnEvent("ItemSelect", Positioning_ItemSelectionChanged)
 AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(1, 25)
 AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(2, 40)
@@ -187,7 +189,8 @@ AutoclickerGui.AddButton("yp wp vPositioning_ClearAllTargets_Button", "&Clear Al
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Hotkeys)
 
-AutoclickerGui.AddListView("w226 h140 vHotkeys_HotkeyList_ListView -LV0x10 NoSortHdr", ["Action", "Global", "Hotkey"])
+AutoclickerGui.AddListView("w226 h140 vHotkeys_HotkeyList_ListView -LV0x10 NoSortHdr"
+    , ["Action", "Global", "Hotkey"])
     .OnEvent("ItemSelect", Hotkeys_ItemSelectionChanged)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(1, 50)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(2, 42)
@@ -272,7 +275,8 @@ Positioning_updateTargetsList(*) {
 }
 
 Positioning_ItemSelectionChanged(*) {
-    AutoclickerGui["Positioning_RemoveTarget_Button"].Enabled := AutoclickerGui["Positioning_TargetList_ListView"].GetNext()
+    AutoclickerGui["Positioning_RemoveTarget_Button"].Enabled
+        := AutoclickerGui["Positioning_TargetList_ListView"].GetNext()
 }
 
 Positioning_AddTarget(*) {
@@ -346,8 +350,7 @@ Positioning_AddTarget(*) {
 
     updateTargetAdderGuiStatusBar() {
         CoordMode "Mouse", TargetAdderGui["TargetRelativeToScreenRadio"].Value = 1 ? "Screen" : "Client"
-        local mouseX
-        local mouseY
+        local mouseX, mouseY
         MouseGetPos &mouseX, &mouseY
         TargetAdderGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 2, 2)
         if !ControlGetVisible(TargetAdderGui.Hwnd, "ahk_id " TargetAdderGui.Hwnd)
@@ -460,7 +463,8 @@ Hotkeys_updateHotkeyBindings() {
 }
 
 Hotkeys_ItemSelectionChanged(*) {
-    AutoclickerGui["Hotkeys_RemoveHotkey_Button"].Enabled := AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetNext()
+    AutoclickerGui["Hotkeys_RemoveHotkey_Button"].Enabled
+        := AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetNext()
 }
 
 Hotkeys_AddHotkey(*) {

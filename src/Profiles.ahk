@@ -283,7 +283,10 @@ ProfileManage(*) {
     refreshProfileList(selectProfileName := "") {
         ProfilesGui["ProfileList"].Delete()
         Loop Reg REG_KEY_PATH "\Profiles", "K"
-            ProfilesGui["ProfileList"].Add(A_LoopRegName = selectProfileName ? "+Focus +Select" : "", A_LoopRegName)
+            ProfilesGui["ProfileList"].Add(
+                A_LoopRegName = selectProfileName ? "+Focus +Select" : ""
+                , A_LoopRegName
+            )
 
         ProfileListSelectionChanged()
         refreshProfileSelectionLists()
@@ -305,7 +308,8 @@ ProfileManage(*) {
                 return
             }
         }
-        MsgBox "The profile '" selectedProfileName "' does not exist or has already been deleted.", "Error", "Iconx 8192"
+        MsgBox "The profile '" selectedProfileName "' does not exist or has already been deleted."
+            , "Error", "Iconx 8192"
         refreshProfileList()
     }
 
@@ -361,7 +365,8 @@ ProfileManage(*) {
                     return
                 }
             }
-            MsgBox "The profile '" selectedProfileName "' does not exist or has been deleted.", "Error", "Iconx 8192"
+            MsgBox "The profile '" selectedProfileName "' does not exist or has been deleted."
+                , "Error", "Iconx 8192"
             ProfileRenamePromptGui.Opt("-Disabled")
             refreshProfileList()
         }
@@ -417,7 +422,8 @@ ProfileManage(*) {
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
                 if A_LoopRegName = profileName {
                     if MsgBox(
-                        "A profile similarly named '" A_LoopRegName "' already exists. Would you like to overwrite it with the imported profile?"
+                        "A profile similarly named '" A_LoopRegName "' already exists."
+                        . " Would you like to overwrite it with the imported profile?"
                         , "Overwrite Profile", "YesNo Iconi 8192"
                     ) = "Yes"
                         RegDeleteKey A_LoopRegKey "\" A_LoopRegName

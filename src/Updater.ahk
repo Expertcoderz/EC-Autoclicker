@@ -56,7 +56,8 @@ Your current version is {}. Would you like to update now?
             Download "https://github.com/" GITHUB_REPO "/releases/latest/download/" downloadFileTargetName
                 , downloadFileInitialPath
         catch as err
-            MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker.`n`nMessage: " err.Message
+            MsgBox "An error occurred in attempting to download the latest version of EC Autoclicker."
+                . "`n`nMessage: " err.Message
                 , "Update"
                 , "Iconx 262144"
         else {
@@ -76,7 +77,9 @@ if A_IsCompiled {
         RegWrite A_NowUTC, "REG_SZ", REG_KEY_PATH, "LastUpdateCheck"
         MsgBox "EC Autoclicker has been updated successfully.`nNew version: " SubStr(FileGetVersion(A_ScriptFullPath), 1, -2)
             , "Update", "Iconi 262144"
-    } else if RegRead(REG_KEY_PATH, "AutoUpdate", true) && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800 {
+    } else if RegRead(REG_KEY_PATH, "AutoUpdate", true)
+        && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800
+    {
         add_log("Automatically checking for newer version")
         CheckForUpdates(false)
     }

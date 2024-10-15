@@ -38,6 +38,7 @@ Start(*) {
         if currentConfig.General_SoundBeep_Checkbox
             SoundBeep currentConfig.General_SoundBeep_NumEdit
 
+        local coords
         if configured_targets.Length > 0 {
             local clickTargetData := configured_targets[clickTargetIndex]
 
@@ -49,11 +50,11 @@ Start(*) {
 
             CoordMode "Mouse", clickTargetData.RelativeTo = 1 ? "Screen" : "Client"
 
-            local coords := clickTargetData.Type = 1 ? clickTargetData.X " " clickTargetData.Y
+            coords := clickTargetData.Type = 1 ? clickTargetData.X " " clickTargetData.Y
                     : (Random(clickTargetData.XMin, clickTargetData.XMax)
                     . " " Random(clickTargetData.YMin, clickTargetData.YMax))
         } else
-            local coords := ""
+            coords := ""
 
         if currentConfig.General_ClickHoldDownDuration_NumEdit {
             Click coords, buttonClickData, "Down"
@@ -90,7 +91,8 @@ Start(*) {
 
         Sleep currentConfig.General_ClickIntervalMode_Radio = 1
             ? currentConfig.General_ClickIntervalLower_NumEdit
-            : Random(currentConfig.General_ClickIntervalLower_NumEdit, currentConfig.General_ClickIntervalUpper_NumEdit)
+            : Random(currentConfig.General_ClickIntervalLower_NumEdit
+            , currentConfig.General_ClickIntervalUpper_NumEdit)
     }
 }
 

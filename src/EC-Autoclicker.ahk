@@ -106,8 +106,7 @@ CoordMode "Mouse", "Screen"
 SetTimer updateAutoclickerGuiStatusBar, 100
 
 updateAutoclickerGuiStatusBar() {
-    local mouseX
-    local mouseY
+    local mouseX, mouseY
     MouseGetPos &mouseX, &mouseY
     AutoclickerGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 3, 2)
 }

@@ -7,8 +7,8 @@ never before seen in other general-purpose autoclicking tools.
 
 ![image](screenshots/gui-main.png)
 
-Executables provided in Releases are compiled using [Ahk2Exe](https://github.com/AutoHotkey/Ahk2Exe)
-, with [UPX](https://upx.github.io/) for compression.
+Executables provided in Releases are compiled using [Ahk2Exe](https://github.com/AutoHotkey/Ahk2Exe),
+with [UPX](https://upx.github.io/) for compression.
 
 ## Features
 
