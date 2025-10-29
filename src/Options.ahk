@@ -49,7 +49,7 @@ toggleSimplifiedView(optionInfo) {
     global is_simplified_view_on := optionInfo.CurrentSetting
     AutoclickerGui["Tab"].Visible := !is_simplified_view_on
     AutoclickerGui["SimplifiedViewHeaderText"].Visible := is_simplified_view_on
-    AutoclickerGui["SimplifiedViewListBox"].Visible := is_simplified_view_on
+    AutoclickerGui["SimplifiedViewListBox"].Visible := is_simplified_view_on && has_profiles
 
     refreshProfileSelectionLists()
 }

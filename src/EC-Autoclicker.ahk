@@ -19,6 +19,7 @@ is_autoclicking := false
 is_simplified_view_on := false
 is_always_on_top_on := true
 are_hotkeys_active := true
+has_profiles := false
 configured_targets := []
 configured_hotkeys := []
 

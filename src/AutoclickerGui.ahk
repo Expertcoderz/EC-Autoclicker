@@ -205,7 +205,10 @@ AutoclickerGui.AddButton("yp wp vHotkeys_ClearAllHotkeys_Button", "&Clear All")
 
 AutoclickerGui["Tab"].UseTab()
 
-AutoclickerGui.AddText("xm ym vSimplifiedViewHeaderText Hidden", "Select a profile:")
+AutoclickerGui.AddText("xm ym vSimplifiedViewHeaderText Hidden",
+    "Select a profile:"
+    "`n`n(No profiles are currently defined."
+    "`nPlease leave Simplified View and create a profile.)")
 AutoclickerGui.AddListBox("xp yp+20 w248 h188 vSimplifiedViewListBox Hidden Sort 0x100")
 
 AutoclickerGui.AddButton("xm w121 vStartButton Default", "START")

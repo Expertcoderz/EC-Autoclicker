@@ -57,14 +57,17 @@ refreshProfileSelectionLists() {
         AutoclickerGui["SimplifiedViewListBox"].Add([A_LoopRegName])
     }
 
-    if numProfiles < 1 {
-        if is_simplified_view_on
-            AutoclickerGui["StartButton"].Enabled := false
-        else
-            AutoclickerGui["StartButton"].Enabled := !is_autoclicking
-    } else {
+    global has_profiles := numProfiles > 0
+    if has_profiles {
+        AutoclickerGui["SimplifiedViewListBox"].Visible := is_simplified_view_on
         AutoclickerGui["SimplifiedViewListBox"].Value := 1
         AutoclickerGui["StartButton"].Enabled := !is_autoclicking
+    } else {
+        if is_simplified_view_on {
+            AutoclickerGui["SimplifiedViewListBox"].Visible := false
+            AutoclickerGui["StartButton"].Enabled := false
+        } else
+            AutoclickerGui["StartButton"].Enabled := !is_autoclicking
     }
 
     add_log("Loaded " numProfiles " profile(s)")
