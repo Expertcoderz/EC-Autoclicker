@@ -123,11 +123,13 @@ ProfileLoad(profileName, *) {
                         continue
 
                     local targetDataMatch
-                    RegExMatch A_LoopField, "^(?P<ApplicableClickCount>.+?)%(?P<Type>\d?)"
-                        . "%(?P<Coords>.+?)%(?P<RelativeTo>\d)$", &targetDataMatch
+                    RegExMatch A_LoopField, "^(?P<ApplicableClickCount>.+?)%(?P<Delay>.+?)"
+                        . "%(?P<Type>\d?)%(?P<Coords>.+?)%(?P<RelativeTo>\d)$"
+                        , &targetDataMatch
 
                     local targetData := {
                         ApplicableClickCount: targetDataMatch["ApplicableClickCount"],
+                        Delay: targetDataMatch["Delay"],
                         Type: targetDataMatch["Type"],
                         RelativeTo: targetDataMatch["RelativeTo"]
                     }
@@ -275,7 +277,9 @@ ProfileCreate(*) {
 
         local serializedTargets := ""
         for targetData in configured_targets
-            serializedTargets .= targetData.ApplicableClickCount "%" targetData.Type
+            serializedTargets .= targetData.ApplicableClickCount
+                . "%" targetData.Delay
+                . "%" targetData.Type
                 . "%" (targetData.Type = 1 ? targetData.X "," targetData.Y
                 : targetData.XMin "," targetData.YMin "," targetData.XMax "," targetData.YMax)
                 . "%" targetData.RelativeTo "`n"

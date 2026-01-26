@@ -35,9 +35,6 @@ Start(*) {
     local clickTargetCount := 1
 
     while is_autoclicking {
-        if currentConfig.General_SoundBeep_Checkbox
-            SoundBeep currentConfig.General_SoundBeep_NumEdit
-
         local coords
         if configured_targets.Length > 0 {
             local clickTargetData := configured_targets[clickTargetIndex]
@@ -48,6 +45,12 @@ Start(*) {
                     clickTargetIndex := 1
             }
 
+            if clickTargetData.Delay > 0 {
+                Sleep clickTargetData.Delay
+                if !is_autoclicking
+                    break
+            }
+
             CoordMode "Mouse", clickTargetData.RelativeTo = 1 ? "Screen" : "Client"
 
             coords := clickTargetData.Type = 1 ? clickTargetData.X " " clickTargetData.Y
@@ -55,6 +58,9 @@ Start(*) {
                     . " " Random(clickTargetData.YMin, clickTargetData.YMax))
         } else
             coords := ""
+
+        if currentConfig.General_SoundBeep_Checkbox
+            SoundBeep currentConfig.General_SoundBeep_NumEdit
 
         if currentConfig.General_ClickHoldDownDuration_NumEdit {
             Click coords, buttonClickData, "Down"

@@ -295,6 +295,10 @@ Positioning_AddTarget(*) {
         TargetAdderGui.AddEdit("xp+56 yp-2 w45 vTargetApplicableClickCountEdit Limit Number", "1")
         TargetAdderGui.AddText("xp+48 yp+2", "contiguous click(s)")
 
+        TargetAdderGui.AddText("xm yp+24", "Delay every click for:")
+        TargetAdderGui.AddEdit("xp+98 yp-2 w45 vTargetDelayEdit Limit Number", "0")
+        TargetAdderGui.AddText("xp+48 yp+2", "ms")
+
         TargetAdderGui.AddGroupBox("xm w226 h110 Section", "Coordinates")
         TargetAdderGui.AddRadio("xs+10 yp+20 vTargetTypePointRadio Checked", SZ_TABLE.Positioning_TargetType.Point)
             .OnEvent("Click", TargetTypeSelectionChanged)
@@ -342,6 +346,7 @@ Positioning_AddTarget(*) {
     }
 
     TargetAdderGui["TargetApplicableClickCountEdit"].Value := 1
+    TargetAdderGui["TargetDelayEdit"].Value := 0
     TargetAdderGui["TargetXPosNumEdit"].Value := 0
     TargetAdderGui["TargetYPosNumEdit"].Value := 0
     TargetAdderGui["TargetXMinPosNumEdit"].Value := 0
@@ -376,6 +381,7 @@ Positioning_AddTarget(*) {
 
         local targetData := {
             ApplicableClickCount: TargetAdderGui["TargetApplicableClickCountEdit"].Value,
+            Delay: TargetAdderGui["TargetDelayEdit"].Value,
             Type: TargetAdderGui["TargetTypePointRadio"].Value = 1 ? 1 : 2,
             RelativeTo: TargetAdderGui["TargetRelativeToScreenRadio"].Value = 1 ? 1 : 2
         }
