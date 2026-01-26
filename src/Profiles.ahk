@@ -38,9 +38,16 @@ assertProfileExists(profileName) {
 }
 
 refreshProfileSelectionLists() {
+    local defaultProfileSubmenu := Menu()
+    local defaultProfileName := RegRead(REG_KEY_PATH "\Profiles", "DefaultProfile", false)
+
     ProfilesMenu.Delete()
     ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Create, ProfileCreate)
     ProfilesMenu.Add(SZ_TABLE.Menu_Profiles_Manage, ProfileManage)
+    ProfilesMenu.Add(
+        SZ_TABLE.Menu_Profiles_Default
+            (defaultProfileName ? ": " defaultProfileName : " (unset)")
+        , defaultProfileSubmenu)
     ProfilesMenu.Add()
 
     if is_simplified_view_on
@@ -51,10 +58,26 @@ refreshProfileSelectionLists() {
     AutoclickerGui["SimplifiedViewListBox"].Delete()
 
     local numProfiles := 0
+    local defaultProfileExists := false
     Loop Reg REG_KEY_PATH "\Profiles", "K" {
         numProfiles++
+
         ProfilesMenu.Add(A_LoopRegName, ProfileLoad)
+
+        defaultProfileSubmenu.Add(A_LoopRegName, ProfileMakeDefault)
+        if A_LoopRegName == defaultProfileName {
+            defaultProfileSubmenu.Check(A_LoopRegName)
+            defaultProfileExists := true
+        }
+
         AutoclickerGui["SimplifiedViewListBox"].Add([A_LoopRegName])
+    }
+
+    if defaultProfileName && !defaultProfileExists {
+        MsgBox "The profile '" defaultProfileName "' was set as default but no longer exists."
+            . "`nThe default profile will be cleared."
+            , "Error", "Iconx 262144"
+        ProfileMakeDefault(defaultProfileName)
     }
 
     global has_profiles := numProfiles > 0
@@ -74,6 +97,10 @@ refreshProfileSelectionLists() {
 }
 
 ProfileLoad(profileName, *) {
+    if !profileName {
+        return
+    }
+
     add_log("Loading profile '" profileName "'")
 
     if !assertProfileExists(profileName) {
@@ -179,6 +206,21 @@ ProfileLoad(profileName, *) {
             }
         }
     }
+}
+
+ProfileMakeDefault(profileName, *) {
+    local defaultProfileName := RegRead(REG_KEY_PATH "\Profiles", "DefaultProfile", false)
+
+    if profileName == defaultProfileName {
+        add_log("Clearing default profile")
+        try RegDelete(REG_KEY_PATH "\Profiles", "DefaultProfile")
+    } else {
+        add_log("Setting profile as default: " profileName)
+        RegCreateKey REG_KEY_PATH "\Profiles\"
+        RegWrite(profileName, "REG_SZ", REG_KEY_PATH "\Profiles", "DefaultProfile")
+    }
+
+    refreshProfileSelectionLists()
 }
 
 ProfileCreate(*) {
@@ -350,24 +392,30 @@ ProfileManage(*) {
             ProfileRenamePromptGui.Opt("+Disabled")
 
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
-                if A_LoopRegName = selectedProfileName {
-                    local newProfileRegPath := A_LoopRegKey "\" profileNewName
-                    RegCreateKey newProfileRegPath
+                if A_LoopRegName != selectedProfileName
+                    continue
 
-                    Loop Reg A_LoopRegKey "\" A_LoopRegName
-                        RegWrite RegRead(), A_LoopRegType, newProfileRegPath, A_LoopRegName
-                    add_log("Copied reg data to profile '" profileNewName "'")
+                local newProfileRegPath := A_LoopRegKey "\" profileNewName
+                RegCreateKey newProfileRegPath
 
-                    RegDeleteKey
-                    add_log("Deleted profile '" selectedProfileName "'")
+                Loop Reg A_LoopRegKey "\" A_LoopRegName
+                    RegWrite RegRead(), A_LoopRegType, newProfileRegPath, A_LoopRegName
+                add_log("Copied reg data to profile '" profileNewName "'")
 
-                    ProfileRenamePromptGui.Hide()
-                    ProfilesGui.Opt("-Disabled")
-                    WinActivate "ahk_id " ProfilesGui.Hwnd
-                    refreshProfileList(profileNewName)
-                    return
-                }
+                RegDeleteKey
+                add_log("Deleted profile '" selectedProfileName "'")
+
+                local defaultProfileName := RegRead(REG_KEY_PATH "\Profiles", "DefaultProfile", false)
+                if defaultProfileName == selectedProfileName
+                    ProfileMakeDefault(profileNewName)
+
+                ProfileRenamePromptGui.Hide()
+                ProfilesGui.Opt("-Disabled")
+                WinActivate "ahk_id " ProfilesGui.Hwnd
+                refreshProfileList(profileNewName)
+                return
             }
+
             MsgBox "The profile '" selectedProfileName "' does not exist or has been deleted."
                 , "Error", "Iconx 8192"
             ProfileRenamePromptGui.Opt("-Disabled")
@@ -491,7 +539,11 @@ if A_Args.Length > 0 && A_Args[1] = "/profile" {
  
     ProfileLoad(A_Args[2])
     Start()
-} else if RegRead(REG_KEY_PATH, "StartCollapsed", false)
-    Collapse()
-else
-    AutoclickerGui.Show()
+} else {
+    if RegRead(REG_KEY_PATH, "StartCollapsed", false)
+        Collapse()
+    else
+        AutoclickerGui.Show()
+
+    ProfileLoad(RegRead(REG_KEY_PATH "\Profiles", "DefaultProfile", false))
+}

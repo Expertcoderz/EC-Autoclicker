@@ -48,6 +48,7 @@ SZ_TABLE := {
     ; Profiles Menu
     Menu_Profiles_Create: "&Save...",
     Menu_Profiles_Manage: "&Manage",
+    Menu_Profiles_Default: "&Default Profile",
     ; Options Menu
     Menu_Options_SimplifiedView: "&Simplified View",
     Menu_Options_AlwaysOnTop: "&Always On Top",
@@ -111,4 +112,3 @@ updateAutoclickerGuiStatusBar() {
     MouseGetPos &mouseX, &mouseY
     AutoclickerGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 3, 2)
 }
-
