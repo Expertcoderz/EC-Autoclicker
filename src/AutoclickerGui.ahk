@@ -173,30 +173,38 @@ AutoclickerGui.AddDropDownList("xp+62 yp-2 w140 vScheduling_PostStopAction_DropD
 
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Positioning)
 
-AutoclickerGui.AddListView("w226 h140 vPositioning_TargetList_ListView -LV0x10 NoSortHdr"
+AutoclickerGui.AddListView("w226 h115 vPositioning_TargetList_ListView -LV0x10 NoSortHdr"
     , ["#", "Type", "Coordinates"])
     .OnEvent("ItemSelect", Positioning_ItemSelectionChanged)
+AutoclickerGui["Positioning_TargetList_ListView"].OnEvent("DoubleClick", Positioning_EditTarget)
 AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(1, 25)
 AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(2, 40)
 AutoclickerGui["Positioning_TargetList_ListView"].ModifyCol(3, 157)
 
-AutoclickerGui.AddButton("xm+10 yp+147 w72 vPositioning_AddTarget_Button", "&Add")
+AutoclickerGui.AddButton("xm+10 yp+122 w72 vPositioning_AddTarget_Button", "&Add")
     .OnEvent("Click", Positioning_AddTarget)
 AutoclickerGui.AddButton("yp wp vPositioning_RemoveTarget_Button Disabled", "&Remove")
     .OnEvent("Click", Positioning_RemoveTarget)
 AutoclickerGui.AddButton("yp wp vPositioning_ClearAllTargets_Button", "&Clear All")
     .OnEvent("Click", Positioning_ClearAllTargets)
 
+AutoclickerGui.AddButton("xm+10 yp+30 w72 vPositioning_EditTarget_Button Disabled", "&Edit")
+    .OnEvent("Click", Positioning_EditTarget)
+AutoclickerGui.AddButton("yp wp vPositioning_MoveTargetUp_Button Disabled", "Move &Up")
+    .OnEvent("Click", (*) => Positioning_transposeTargets(-1))
+AutoclickerGui.AddButton("yp wp vPositioning_MoveTargetDown_Button Disabled", "Move &Down")
+    .OnEvent("Click", (*) => Positioning_transposeTargets(1))
+
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Hotkeys)
 
-AutoclickerGui.AddListView("w226 h140 vHotkeys_HotkeyList_ListView -LV0x10 NoSortHdr"
+AutoclickerGui.AddListView("w226 h145 vHotkeys_HotkeyList_ListView -LV0x10 NoSortHdr"
     , ["Action", "Global", "Hotkey"])
     .OnEvent("ItemSelect", Hotkeys_ItemSelectionChanged)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(1, 50)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(2, 42)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(3, 130)
 
-AutoclickerGui.AddButton("xm+10 yp+147 w72 vHotkeys_AddHotkey_Button", "&Add")
+AutoclickerGui.AddButton("xm+10 yp+152 w72 vHotkeys_AddHotkey_Button", "&Add")
     .OnEvent("Click", Hotkeys_AddHotkey)
 AutoclickerGui.AddButton("yp wp vHotkeys_RemoveHotkey_Button Disabled", "&Remove")
     .OnEvent("Click", Hotkeys_RemoveHotkey)
@@ -205,8 +213,8 @@ AutoclickerGui.AddButton("yp wp vHotkeys_ClearAllHotkeys_Button", "&Clear All")
 
 AutoclickerGui["Tab"].UseTab()
 
-AutoclickerGui.AddText("xm ym vSimplifiedViewHeaderText Hidden",
-    "Select a profile:"
+AutoclickerGui.AddText("xm ym vSimplifiedViewHeaderText Hidden"
+    , "Select a profile:"
     "`n`n(No profiles are currently defined."
     "`nPlease leave Simplified View and create a profile.)")
 AutoclickerGui.AddListBox("xp yp+20 w248 h188 vSimplifiedViewListBox Hidden Sort 0x100")
@@ -278,90 +286,92 @@ Positioning_updateTargetsList(*) {
 }
 
 Positioning_ItemSelectionChanged(*) {
-    AutoclickerGui["Positioning_RemoveTarget_Button"].Enabled
-        := AutoclickerGui["Positioning_TargetList_ListView"].GetNext()
+    local selectedNum := AutoclickerGui["Positioning_TargetList_ListView"].GetNext()
+
+    ; "Edit" button should be enabled only if exactly one target is selected.
+    AutoclickerGui["Positioning_EditTarget_Button"].Enabled := selectedNum
+        && !AutoclickerGui["Positioning_TargetList_ListView"].GetNext(selectedNum)
+
+    AutoclickerGui["Positioning_MoveTargetUp_Button"].Enabled := selectedNum
+    AutoclickerGui["Positioning_MoveTargetDown_Button"].Enabled := selectedNum
+    AutoclickerGui["Positioning_RemoveTarget_Button"].Enabled := selectedNum
 }
 
-Positioning_AddTarget(*) {
-    static TargetAdderGui
+Positioning_prepareTargetEditor(submitCallback) {
+    ; Make it a static variable to prevent capturing by Submit().
+    static currentSubmitCallback
+    currentSubmitCallback := submitCallback
+
+    static TargetEditorGui
     static PerTypeCoordControls
-    if !IsSet(TargetAdderGui) {
-        TargetAdderGui := Gui("-SysMenu +Owner" AutoclickerGui.Hwnd, "Add Target")
+    if !IsSet(TargetEditorGui) {
+        TargetEditorGui := Gui("-SysMenu +Owner" AutoclickerGui.Hwnd, "Add Target")
 
-        TargetAdderGui.OnEvent("Escape", hideOwnedGui)
-        TargetAdderGui.OnEvent("Close", hideOwnedGui)
+        TargetEditorGui.OnEvent("Escape", hideOwnedGui)
+        TargetEditorGui.OnEvent("Close", hideOwnedGui)
 
-        TargetAdderGui.AddText("ym+2", "Applies for:")
-        TargetAdderGui.AddEdit("xp+56 yp-2 w45 vTargetApplicableClickCountEdit Limit Number", "1")
-        TargetAdderGui.AddText("xp+48 yp+2", "contiguous click(s)")
+        TargetEditorGui.AddText("ym+2", "Applies for:")
+        TargetEditorGui.AddEdit("xp+56 yp-2 w45 vTargetApplicableClickCountEdit Limit Number", "1")
+        TargetEditorGui.AddText("xp+48 yp+2", "contiguous click(s)")
 
-        TargetAdderGui.AddText("xm yp+24", "Delay every click for:")
-        TargetAdderGui.AddEdit("xp+98 yp-2 w45 vTargetDelayEdit Limit Number", "0")
-        TargetAdderGui.AddText("xp+48 yp+2", "ms")
+        TargetEditorGui.AddText("xm yp+24", "Delay every click for:")
+        TargetEditorGui.AddEdit("xp+98 yp-2 w45 vTargetDelayEdit Limit Number", "0")
+        TargetEditorGui.AddText("xp+48 yp+2", "ms")
 
-        TargetAdderGui.AddGroupBox("xm w226 h110 Section", "Coordinates")
-        TargetAdderGui.AddRadio("xs+10 yp+20 vTargetTypePointRadio Checked", SZ_TABLE.Positioning_TargetType.Point)
+        TargetEditorGui.AddGroupBox("xm w226 h110 Section", "Coordinates")
+        TargetEditorGui.AddRadio("xs+10 yp+20 vTargetTypePointRadio", SZ_TABLE.Positioning_TargetType.Point)
             .OnEvent("Click", TargetTypeSelectionChanged)
-        TargetAdderGui.AddRadio("yp vTargetTypeBoxRadio", SZ_TABLE.Positioning_TargetType.Box)
+        TargetEditorGui.AddRadio("yp vTargetTypeBoxRadio", SZ_TABLE.Positioning_TargetType.Box)
             .OnEvent("Click", TargetTypeSelectionChanged)
 
         PerTypeCoordControls := {
             TargetTypePointRadio: [
-                TargetAdderGui.AddText("xs+10 ys+50 Hidden", "X:"),
-                TargetAdderGui.AddEdit("xp+20 yp-2 w30 vTargetXPosNumEdit Limit Number Hidden", "0"),
-                TargetAdderGui.AddText("xp+45 yp+2 Hidden", "Y:"),
-                TargetAdderGui.AddEdit("xp+20 yp-2 w30 vTargetYPosNumEdit Limit Number Hidden", "0")
+                TargetEditorGui.AddText("xs+10 ys+50 Hidden", "X:"),
+                TargetEditorGui.AddEdit("xp+20 yp-2 w30 vTargetXPosNumEdit Limit Number Hidden", "0"),
+                TargetEditorGui.AddText("xp+45 yp+2 Hidden", "Y:"),
+                TargetEditorGui.AddEdit("xp+20 yp-2 w30 vTargetYPosNumEdit Limit Number Hidden", "0")
             ],
             TargetTypeBoxRadio: [
-                TargetAdderGui.AddText("xs+10 ys+50 Hidden", "X min:"),
-                TargetAdderGui.AddEdit("xp+34 yp-2 w30 vTargetXMinPosNumEdit Limit Number Hidden", "0"),
-                TargetAdderGui.AddText("xp+45 yp+2 Hidden", "Y min:"),
-                TargetAdderGui.AddEdit("xp+35 yp-2 w30 vTargetYMinPosNumEdit Limit Number Hidden", "0"),
-                TargetAdderGui.AddText("xs+10 yp+30 Hidden", "X max:"),
-                TargetAdderGui.AddEdit("xp+34 yp-2 w30 vTargetXMaxPosNumEdit Limit Number Hidden", "0"),
-                TargetAdderGui.AddText("xp+45 yp+2 Hidden", "Y max:"),
-                TargetAdderGui.AddEdit("xp+35 yp-2 w30 vTargetYMaxPosNumEdit Limit Number Hidden", "0")
+                TargetEditorGui.AddText("xs+10 ys+50 Hidden", "X min:"),
+                TargetEditorGui.AddEdit("xp+34 yp-2 w30 vTargetXMinPosNumEdit Limit Number Hidden", "0"),
+                TargetEditorGui.AddText("xp+45 yp+2 Hidden", "Y min:"),
+                TargetEditorGui.AddEdit("xp+35 yp-2 w30 vTargetYMinPosNumEdit Limit Number Hidden", "0"),
+                TargetEditorGui.AddText("xs+10 yp+30 Hidden", "X max:"),
+                TargetEditorGui.AddEdit("xp+34 yp-2 w30 vTargetXMaxPosNumEdit Limit Number Hidden", "0"),
+                TargetEditorGui.AddText("xp+45 yp+2 Hidden", "Y max:"),
+                TargetEditorGui.AddEdit("xp+35 yp-2 w30 vTargetYMaxPosNumEdit Limit Number Hidden", "0")
             ]
         }
 
-        TargetAdderGui.AddGroupBox("xs yp+40 w145 h59 Section", "Position relative to")
-        TargetAdderGui.AddRadio("xs+10 yp+20 vTargetRelativeToScreenRadio Checked", "Entire &screen (ABS)")
+        TargetEditorGui.AddGroupBox("xs yp+40 w145 h59 Section", "Position relative to")
+        TargetEditorGui.AddRadio("xs+10 yp+20 vTargetRelativeToScreenRadio", "Entire &screen (ABS)")
             .OnEvent("Click", TargetRelativeToSelectionChanged)
-        TargetAdderGui.AddRadio("xp vTargetRelativeToFocused", "Focused &window (REL)")
+        TargetEditorGui.AddRadio("xp vTargetRelativeToFocusedRadio", "Focused &window (REL)")
             .OnEvent("Click", TargetRelativeToSelectionChanged)
 
-        TargetAdderGui.AddButton("ys+6 w80 Default", "OK")
+        TargetEditorGui.AddButton("ys+6 w80 Default", "OK")
             .OnEvent("Click", Submit)
-        TargetAdderGui.AddButton("xp wp", "Cancel")
-            .OnEvent("Click", (*) => hideOwnedGui(TargetAdderGui))
+        TargetEditorGui.AddButton("xp wp", "Cancel")
+            .OnEvent("Click", (*) => hideOwnedGui(TargetEditorGui))
 
-        TargetAdderGui.AddStatusBar("vStatusBar")
-        TargetAdderGui["StatusBar"].SetParts(40)
-        TargetAdderGui["StatusBar"].SetText(" (ABS)")
-        TargetAdderGui["StatusBar"].SetText("X=? Y=?", 2, 2)
+        TargetEditorGui.AddStatusBar("vStatusBar")
+        TargetEditorGui["StatusBar"].SetParts(40)
+        TargetEditorGui["StatusBar"].SetText(" (ABS)")
+        TargetEditorGui["StatusBar"].SetText("X=? Y=?", 2, 2)
 
         add_log("Created target adder GUI")
 
-        TargetTypeSelectionChanged(TargetAdderGui["TargetTypePointRadio"])
+        TargetTypeSelectionChanged(TargetEditorGui["TargetTypePointRadio"])
     }
 
-    TargetAdderGui["TargetApplicableClickCountEdit"].Value := 1
-    TargetAdderGui["TargetDelayEdit"].Value := 0
-    TargetAdderGui["TargetXPosNumEdit"].Value := 0
-    TargetAdderGui["TargetYPosNumEdit"].Value := 0
-    TargetAdderGui["TargetXMinPosNumEdit"].Value := 0
-    TargetAdderGui["TargetYMinPosNumEdit"].Value := 0
-    TargetAdderGui["TargetXMaxPosNumEdit"].Value := 0
-    TargetAdderGui["TargetYMaxPosNumEdit"].Value := 0
-    showGuiAtAutoclickerGuiPos(TargetAdderGui)
     SetTimer updateTargetAdderGuiStatusBar, 100
 
     updateTargetAdderGuiStatusBar() {
-        CoordMode "Mouse", TargetAdderGui["TargetRelativeToScreenRadio"].Value = 1 ? "Screen" : "Client"
+        CoordMode "Mouse", TargetEditorGui["TargetRelativeToScreenRadio"].Value = 1 ? "Screen" : "Client"
         local mouseX, mouseY
         MouseGetPos &mouseX, &mouseY
-        TargetAdderGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 2, 2)
-        if !ControlGetVisible(TargetAdderGui.Hwnd, "ahk_id " TargetAdderGui.Hwnd)
+        TargetEditorGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 2, 2)
+        if !ControlGetVisible(TargetEditorGui.Hwnd, "ahk_id " TargetEditorGui.Hwnd)
             SetTimer , 0 ; mark timer for deletion
     }
 
@@ -373,27 +383,66 @@ Positioning_AddTarget(*) {
     }
 
     TargetRelativeToSelectionChanged(radio, *) {
-        TargetAdderGui["StatusBar"].SetText(radio.Name = "TargetRelativeToScreenRadio" ? " (ABS)" : " (REL)")
+        TargetEditorGui["StatusBar"].SetText(radio.Name = "TargetRelativeToScreenRadio" ? " (ABS)" : " (REL)")
+    }
+
+    updateState() {
+        TargetTypeSelectionChanged(TargetEditorGui["TargetTypePointRadio"].Value
+            ? TargetEditorGui["TargetTypePointRadio"]
+            : TargetEditorGui["TargetTypeBoxRadio"])
+
+        TargetRelativeToSelectionChanged(TargetEditorGui["TargetRelativeToScreenRadio"].Value
+            ? TargetEditorGui["TargetRelativeToScreenRadio"]
+            : TargetEditorGui["TargetRelativeToFocusedRadio"])
     }
 
     Submit(*) {
-        hideOwnedGui(TargetAdderGui)
+        hideOwnedGui(TargetEditorGui)
 
         local targetData := {
-            ApplicableClickCount: TargetAdderGui["TargetApplicableClickCountEdit"].Value,
-            Delay: TargetAdderGui["TargetDelayEdit"].Value,
-            Type: TargetAdderGui["TargetTypePointRadio"].Value = 1 ? 1 : 2,
-            RelativeTo: TargetAdderGui["TargetRelativeToScreenRadio"].Value = 1 ? 1 : 2
+            ApplicableClickCount: TargetEditorGui["TargetApplicableClickCountEdit"].Value,
+            Delay: TargetEditorGui["TargetDelayEdit"].Value,
+            Type: TargetEditorGui["TargetTypePointRadio"].Value = 1 ? 1 : 2,
+            RelativeTo: TargetEditorGui["TargetRelativeToScreenRadio"].Value = 1 ? 1 : 2
         }
-        if TargetAdderGui["TargetTypePointRadio"].Value = 1 {
-            targetData.X := Number(TargetAdderGui["TargetXPosNumEdit"].Value)
-            targetData.Y := Number(TargetAdderGui["TargetYPosNumEdit"].Value)
+        if TargetEditorGui["TargetTypePointRadio"].Value = 1 {
+            targetData.X := Number(TargetEditorGui["TargetXPosNumEdit"].Value)
+            targetData.Y := Number(TargetEditorGui["TargetYPosNumEdit"].Value)
         } else {
-            targetData.XMin := Number(TargetAdderGui["TargetXMinPosNumEdit"].Value)
-            targetData.YMin := Number(TargetAdderGui["TargetYMinPosNumEdit"].Value)
-            targetData.XMax := Number(TargetAdderGui["TargetXMaxPosNumEdit"].Value)
-            targetData.YMax := Number(TargetAdderGui["TargetYMaxPosNumEdit"].Value)
+            targetData.XMin := Number(TargetEditorGui["TargetXMinPosNumEdit"].Value)
+            targetData.YMin := Number(TargetEditorGui["TargetYMinPosNumEdit"].Value)
+            targetData.XMax := Number(TargetEditorGui["TargetXMaxPosNumEdit"].Value)
+            targetData.YMax := Number(TargetEditorGui["TargetYMaxPosNumEdit"].Value)
         }
+
+        currentSubmitCallback(targetData)
+    }
+
+    return [TargetEditorGui, updateState]
+}
+
+Positioning_AddTarget(*) {
+    local ret := Positioning_prepareTargetEditor(Submit)
+    local TargetEditorGui := ret[1]
+    local updateState := ret[2]
+
+    TargetEditorGui["TargetApplicableClickCountEdit"].Value := 1
+    TargetEditorGui["TargetDelayEdit"].Value := 0
+    TargetEditorGui["TargetTypePointRadio"].Value := 1
+    TargetEditorGui["TargetTypeBoxRadio"].Value := 0
+    TargetEditorGui["TargetXPosNumEdit"].Value := 0
+    TargetEditorGui["TargetYPosNumEdit"].Value := 0
+    TargetEditorGui["TargetXMinPosNumEdit"].Value := 0
+    TargetEditorGui["TargetYMinPosNumEdit"].Value := 0
+    TargetEditorGui["TargetXMaxPosNumEdit"].Value := 0
+    TargetEditorGui["TargetYMaxPosNumEdit"].Value := 0
+    TargetEditorGui["TargetRelativeToScreenRadio"].Value := 1
+    TargetEditorGui["TargetRelativeToFocusedRadio"].Value := 0
+
+    updateState()
+    showGuiAtAutoclickerGuiPos(TargetEditorGui)
+
+    Submit(targetData) {
         configured_targets.Push(targetData)
 
         Positioning_updateTargetsList()
@@ -401,15 +450,95 @@ Positioning_AddTarget(*) {
     }
 }
 
-Positioning_RemoveTarget(*) {
-    add_log "Starting targets removal"
+Positioning_EditTarget(*) {
+    local ret := Positioning_prepareTargetEditor(Submit)
+    local TargetEditorGui := ret[1]
+    local updateState := ret[2]
+
+    ; targetIdx is declared static to prevent capturing by Submit().
+    static targetIdx
+    targetIdx := AutoclickerGui["Positioning_TargetList_ListView"].GetNext()
+    if targetIdx < 1
+        return
+
+    local targetData := configured_targets[targetIdx]
+    TargetEditorGui["TargetApplicableClickCountEdit"].Value := targetData.ApplicableClickCount
+    TargetEditorGui["TargetDelayEdit"].Value := 0
+    if targetData.Type = 1 {
+        TargetEditorGui["TargetTypePointRadio"].Value := 1
+        TargetEditorGui["TargetTypeBoxRadio"].Value := 0
+        TargetEditorGui["TargetXPosNumEdit"].Value := targetData.X
+        TargetEditorGui["TargetYPosNumEdit"].Value := targetData.Y
+        TargetEditorGui["TargetXMinPosNumEdit"].Value := 0
+        TargetEditorGui["TargetYMinPosNumEdit"].Value := 0
+        TargetEditorGui["TargetXMaxPosNumEdit"].Value := 0
+        TargetEditorGui["TargetYMaxPosNumEdit"].Value := 0
+    } else {
+        TargetEditorGui["TargetTypePointRadio"].Value := 0
+        TargetEditorGui["TargetTypeBoxRadio"].Value := 1
+        TargetEditorGui["TargetXPosNumEdit"].Value := 0
+        TargetEditorGui["TargetYPosNumEdit"].Value := 0
+        TargetEditorGui["TargetXMinPosNumEdit"].Value := targetData.XMin
+        TargetEditorGui["TargetYMinPosNumEdit"].Value := targetData.YMin
+        TargetEditorGui["TargetXMaxPosNumEdit"].Value := targetData.XMax
+        TargetEditorGui["TargetYMaxPosNumEdit"].Value := targetData.YMax
+    }
+    TargetEditorGui["TargetRelativeToScreenRadio"].Value := targetData.RelativeTo = 1
+    TargetEditorGui["TargetRelativeToFocusedRadio"].Value := targetData.RelativeTo = 2
+
+    updateState()
+    showGuiAtAutoclickerGuiPos(TargetEditorGui)
+
+    Submit(targetData) {
+        configured_targets[targetIdx] := targetData
+
+        Positioning_updateTargetsList()
+        AutoclickerGui["Positioning_TargetList_ListView"].Modify(targetIdx, "+Select")
+        Positioning_ItemSelectionChanged()
+    }
+}
+
+Positioning_transposeTargets(offset) {
+    add_log "Transposing targets by offset " offset
+
+    local rowNumsToReselect := []
     local rowNum := 0
-    local nRemoved := 0
     Loop {
         rowNum := AutoclickerGui["Positioning_TargetList_ListView"].GetNext(rowNum)
         if !rowNum
             break
-        add_log "Removing target #" rowNum
+
+        local neighborNum := rowNum + offset
+        if neighborNum < 1 || neighborNum > configured_targets.Length {
+            rowNumsToReselect.Push(rowNum)
+            continue
+        }
+
+        local neighborTarget := configured_targets[neighborNum]
+        configured_targets[neighborNum] := configured_targets[rowNum]
+        configured_targets[rowNum] := neighborTarget
+
+        rowNumsToReselect.Push(neighborNum)
+    }
+
+    Positioning_updateTargetsList()
+
+    for num in rowNumsToReselect
+        AutoclickerGui["Positioning_TargetList_ListView"].Modify(num, "+Select")
+
+    AutoclickerGui["Positioning_EditTarget_Button"].Enabled := rowNumsToReselect.Length = 1
+}
+
+Positioning_RemoveTarget(*) {
+    add_log "Removing targets"
+
+    local nRemoved := 0
+    local rowNum := 0
+    Loop {
+        rowNum := AutoclickerGui["Positioning_TargetList_ListView"].GetNext(rowNum)
+        if !rowNum
+            break
+
         configured_targets.RemoveAt(rowNum - nRemoved++)
     }
 
