@@ -51,9 +51,9 @@ Start(*) {
                     break
             }
 
-            CoordMode "Mouse", clickTargetData.RelativeTo = 1 ? "Screen" : "Client"
+            CoordMode "Mouse", clickTargetData.RelativeTo
 
-            coords := clickTargetData.Type = 1 ? clickTargetData.X " " clickTargetData.Y
+            coords := clickTargetData.Type == "Point" ? clickTargetData.X " " clickTargetData.Y
                     : (Random(clickTargetData.XMin, clickTargetData.XMax)
                     . " " Random(clickTargetData.YMin, clickTargetData.YMax))
         } else

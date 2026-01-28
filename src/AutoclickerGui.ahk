@@ -16,7 +16,7 @@ makeCheckable(name, checkbox, callback := 0, controls := []) {
         checkbox.OnEvent("Click", Toggle)
         Toggle(*) {
             for ctrl in controls
-                ctrl.Enabled := checkbox.Value
+                ctrl.Enabled := checkbox.Value != 0
         }
         Checkables.%name%.Callback := Toggle
     } else if callback
@@ -43,8 +43,10 @@ FileMenu.Add(SZ_TABLE.Menu_File_Logs, LogsOpen)
 FileMenu.Add(SZ_TABLE.Menu_File_Exit, Close)
 
 ProfilesMenu := Menu()
+; ProfilesMenu is managed by Profiles.ahk.
 
 OptionsMenu := Menu()
+; OptionsMenu is managed by Options.ahk.
 
 HelpMenu := Menu()
 HelpMenu.Add(
@@ -198,7 +200,7 @@ AutoclickerGui.AddButton("yp wp vPositioning_MoveTargetDown_Button Disabled", "M
 AutoclickerGui["Tab"].UseTab(SZ_TABLE.Tabs.Hotkeys)
 
 AutoclickerGui.AddListView("w226 h145 vHotkeys_HotkeyList_ListView -LV0x10 NoSortHdr"
-    , ["Action", "Global", "Hotkey"])
+    , ["Action", "Scope", "Hotkey"])
     .OnEvent("ItemSelect", Hotkeys_ItemSelectionChanged)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(1, 50)
 AutoclickerGui["Hotkeys_HotkeyList_ListView"].ModifyCol(2, 42)
@@ -231,7 +233,7 @@ AutoclickerGui["StatusBar"].SetText("Elapsed: 0.0", 2)
 AutoclickerGui["StatusBar"].SetText("X=? Y=?", 3, 2)
 
 General_ClickIntervalModeChanged(*) {
-    local isRange := !AutoclickerGui["General_ClickIntervalMode_Radio"].Value
+    local isRange := AutoclickerGui["General_ClickIntervalMode_Radio"].Value == 0
     AutoclickerGui["General_ClickIntervalRange_Text"].Visible := isRange
     AutoclickerGui["General_ClickIntervalUpper_NumEdit"].Visible := isRange
     AutoclickerGui["General_ClickIntervalUpper_UnitText"].Visible := isRange
@@ -240,7 +242,7 @@ General_ClickIntervalModeChanged(*) {
 Scheduling_updateStopAfter() {
     local activeCount := 0
     for criterionName in ["NumClicks", "Duration", "Time"] {
-        if AutoclickerGui["Scheduling_StopAfter" criterionName "_Checkbox"].Value {
+        if AutoclickerGui["Scheduling_StopAfter" criterionName "_Checkbox"].Value != 0 {
             activeCount += 1
             if activeCount = 2
                 break
@@ -269,6 +271,16 @@ Scheduling_StopAfterTimeToggled(*) {
     Scheduling_updateStopAfter()
 }
 
+Positioning_formatTargetCoords(targetData) {
+    switch targetData.Type {
+    case "Point":
+        return targetData.X ", " targetData.Y
+    case "Box":
+        return targetData.XMin ", " targetData.YMin
+            . " -- " targetData.XMax ", " targetData.YMax
+    }
+}
+
 Positioning_updateTargetsList(*) {
     AutoclickerGui["Positioning_TargetList_ListView"].Delete()
 
@@ -276,10 +288,9 @@ Positioning_updateTargetsList(*) {
     for targetData in configured_targets {
         AutoclickerGui["Positioning_TargetList_ListView"].Add(
             , cumulativeApplicableClickCount
-            , targetData.Type = 1 ? "Point" : "Box"
-            , (targetData.Type = 1 ? targetData.X ", " targetData.Y
-            : targetData.XMin ", " targetData.YMin " -- " targetData.XMax ", " targetData.YMax)
-            . (targetData.RelativeTo = 1 ? " (ABS)" : " (REL)")
+            , targetData.Type
+            , Positioning_formatTargetCoords(targetData)
+            . (targetData.RelativeTo == "Screen" ? " (ABS)" : " (REL)")
         )
         cumulativeApplicableClickCount += targetData.ApplicableClickCount
     }
@@ -290,7 +301,7 @@ Positioning_ItemSelectionChanged(*) {
 
     ; "Edit" button should be enabled only if exactly one target is selected.
     AutoclickerGui["Positioning_EditTarget_Button"].Enabled := selectedNum
-        && !AutoclickerGui["Positioning_TargetList_ListView"].GetNext(selectedNum)
+        && AutoclickerGui["Positioning_TargetList_ListView"].GetNext(selectedNum) == 0
 
     AutoclickerGui["Positioning_MoveTargetUp_Button"].Enabled := selectedNum
     AutoclickerGui["Positioning_MoveTargetDown_Button"].Enabled := selectedNum
@@ -367,7 +378,7 @@ Positioning_prepareTargetEditor(submitCallback) {
     SetTimer updateTargetAdderGuiStatusBar, 100
 
     updateTargetAdderGuiStatusBar() {
-        CoordMode "Mouse", TargetEditorGui["TargetRelativeToScreenRadio"].Value = 1 ? "Screen" : "Client"
+        CoordMode "Mouse", TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0 ? "Screen" : "Client"
         local mouseX, mouseY
         MouseGetPos &mouseX, &mouseY
         TargetEditorGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 2, 2)
@@ -378,20 +389,20 @@ Positioning_prepareTargetEditor(submitCallback) {
     TargetTypeSelectionChanged(radio, *) {
         for key, list in PerTypeCoordControls.OwnProps() {
             for ctrl in list
-                ctrl.Visible := key = radio.Name
+                ctrl.Visible := key == radio.Name
         }
     }
 
     TargetRelativeToSelectionChanged(radio, *) {
-        TargetEditorGui["StatusBar"].SetText(radio.Name = "TargetRelativeToScreenRadio" ? " (ABS)" : " (REL)")
+        TargetEditorGui["StatusBar"].SetText(radio.Name == "TargetRelativeToScreenRadio" ? " (ABS)" : " (REL)")
     }
 
     updateState() {
-        TargetTypeSelectionChanged(TargetEditorGui["TargetTypePointRadio"].Value
+        TargetTypeSelectionChanged(TargetEditorGui["TargetTypePointRadio"].Value != 0
             ? TargetEditorGui["TargetTypePointRadio"]
             : TargetEditorGui["TargetTypeBoxRadio"])
 
-        TargetRelativeToSelectionChanged(TargetEditorGui["TargetRelativeToScreenRadio"].Value
+        TargetRelativeToSelectionChanged(TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0
             ? TargetEditorGui["TargetRelativeToScreenRadio"]
             : TargetEditorGui["TargetRelativeToFocusedRadio"])
     }
@@ -402,10 +413,10 @@ Positioning_prepareTargetEditor(submitCallback) {
         local targetData := {
             ApplicableClickCount: TargetEditorGui["TargetApplicableClickCountEdit"].Value,
             Delay: TargetEditorGui["TargetDelayEdit"].Value,
-            Type: TargetEditorGui["TargetTypePointRadio"].Value = 1 ? 1 : 2,
-            RelativeTo: TargetEditorGui["TargetRelativeToScreenRadio"].Value = 1 ? 1 : 2
+            Type: TargetEditorGui["TargetTypePointRadio"].Value != 0 ? "Point" : "Box",
+            RelativeTo: TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0 ? "Screen" : "Client"
         }
-        if TargetEditorGui["TargetTypePointRadio"].Value = 1 {
+        if TargetEditorGui["TargetTypePointRadio"].Value != 0 {
             targetData.X := Number(TargetEditorGui["TargetXPosNumEdit"].Value)
             targetData.Y := Number(TargetEditorGui["TargetYPosNumEdit"].Value)
         } else {
@@ -464,7 +475,8 @@ Positioning_EditTarget(*) {
     local targetData := configured_targets[targetIdx]
     TargetEditorGui["TargetApplicableClickCountEdit"].Value := targetData.ApplicableClickCount
     TargetEditorGui["TargetDelayEdit"].Value := 0
-    if targetData.Type = 1 {
+    switch targetData.Type {
+    case "Point":
         TargetEditorGui["TargetTypePointRadio"].Value := 1
         TargetEditorGui["TargetTypeBoxRadio"].Value := 0
         TargetEditorGui["TargetXPosNumEdit"].Value := targetData.X
@@ -473,7 +485,7 @@ Positioning_EditTarget(*) {
         TargetEditorGui["TargetYMinPosNumEdit"].Value := 0
         TargetEditorGui["TargetXMaxPosNumEdit"].Value := 0
         TargetEditorGui["TargetYMaxPosNumEdit"].Value := 0
-    } else {
+    case "Box":
         TargetEditorGui["TargetTypePointRadio"].Value := 0
         TargetEditorGui["TargetTypeBoxRadio"].Value := 1
         TargetEditorGui["TargetXPosNumEdit"].Value := 0
@@ -483,8 +495,8 @@ Positioning_EditTarget(*) {
         TargetEditorGui["TargetXMaxPosNumEdit"].Value := targetData.XMax
         TargetEditorGui["TargetYMaxPosNumEdit"].Value := targetData.YMax
     }
-    TargetEditorGui["TargetRelativeToScreenRadio"].Value := targetData.RelativeTo = 1
-    TargetEditorGui["TargetRelativeToFocusedRadio"].Value := targetData.RelativeTo = 2
+    TargetEditorGui["TargetRelativeToScreenRadio"].Value := targetData.RelativeTo == "Screen"
+    TargetEditorGui["TargetRelativeToFocusedRadio"].Value := targetData.RelativeTo == "Client"
 
     updateState()
     showGuiAtAutoclickerGuiPos(TargetEditorGui)
@@ -557,12 +569,9 @@ Hotkeys_updateHotkeyBindings() {
 
     for hotkeyData in configured_hotkeys {
         AutoclickerGui["Hotkeys_HotkeyList_ListView"].Add(
-            , hotkeyData.Action = 1 ? "Start"
-                : hotkeyData.Action = 2 ? "Stop"
-                : hotkeyData.Action = 3 ? "Toggle"
-                : "Close"
-            , hotkeyData.Scope = 1 ? "Yes" : "No"
-            , hotkeyData.HotkeyText
+            , hotkeyData.Action
+            , hotkeyData.Scope
+            , formatHotkeyText(hotkeyData.Hotkey)
         )
 
         #MaxThreadsPerHotkey 2 ; needed for Toggle Autoclicker to work
@@ -578,23 +587,23 @@ Hotkeys_updateHotkeyBindings() {
                 }
             }
 
-            if hotkeyData.Scope = 2 && !WinActive("ahk_id " AutoclickerGui.Hwnd)
+            if hotkeyData.Scope == "Global" && !WinActive("ahk_id " AutoclickerGui.Hwnd)
                 return
     
             switch hotkeyData.Action {
-                case 1:
-                    if !is_autoclicking
-                        Start()
-                case 2:
-                    if is_autoclicking
-                        Stop()
-                case 3:
-                    if is_autoclicking
-                        Stop()
-                    else
-                        Start()
-                case 4:
-                    ExitApp
+            case "Start":
+                if !is_autoclicking
+                    Start()
+            case "Stop":
+                if is_autoclicking
+                    Stop()
+            case "Toggle":
+                if is_autoclicking
+                    Stop()
+                else
+                    Start()
+            case "Close":
+                ExitApp
             }
         }
     }
@@ -602,7 +611,7 @@ Hotkeys_updateHotkeyBindings() {
 
 Hotkeys_ItemSelectionChanged(*) {
     AutoclickerGui["Hotkeys_RemoveHotkey_Button"].Enabled
-        := AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetNext()
+        := AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetNext() != 0
 }
 
 Hotkeys_AddHotkey(*) {
@@ -647,7 +656,8 @@ Hotkeys_AddHotkey(*) {
         for hotkeyData in configured_hotkeys {
             if "~" KeyBinderGui["Hotkey"].Value = hotkeyData.Hotkey {
                 if MsgBox(
-                    "The hotkey '" hotkeyText "' is already in use. Would you like to overwrite it?"
+                    "The hotkey '" formatHotkeyText(hotkeyData.Hotkey) "' is already in use."
+                    . " Would you like to overwrite it?"
                     , "Overwrite Hotkey"
                     , "YesNo Iconi 8192"
                 ) = "Yes"
@@ -658,18 +668,15 @@ Hotkeys_AddHotkey(*) {
             }
         }
 
-        local hotkeyText := formatHotkeyText(KeyBinderGui["Hotkey"].Value)
-
         configured_hotkeys.Push {
             Hotkey: "~" KeyBinderGui["Hotkey"].Value,
-            HotkeyText: hotkeyText,
-            Scope: KeyBinderGui["HotkeyScopeDropDownList"].Value,
-            Action: KeyBinderGui["HotkeyActionStartRadio"].Value = 1 ? 1
-                : KeyBinderGui["HotkeyActionStopRadio"].Value = 1 ? 2
-                : KeyBinderGui["HotkeyActionToggleRadio"].Value = 1 ? 3
-                : 4
+            Scope: ["Global", "Local"][KeyBinderGui["HotkeyScopeDropDownList"].Value],
+            Action: KeyBinderGui["HotkeyActionStartRadio"].Value = 1 ? "Start"
+                : KeyBinderGui["HotkeyActionStopRadio"].Value = 1 ? "Stop"
+                : KeyBinderGui["HotkeyActionToggleRadio"].Value = 1 ? "Toggle"
+                : "Close"
         }
-        add_log("Added hotkey: " hotkeyText)
+        add_log("Added hotkey: " formatHotkeyText(KeyBinderGui["Hotkey"].Value))
         Hotkeys_updateHotkeyBindings()
         Hotkeys_ItemSelectionChanged()
     }
@@ -683,7 +690,7 @@ Hotkeys_RemoveHotkey(*) {
         rowNum := AutoclickerGui["Hotkeys_HotkeyList_ListView"].GetNext(rowNum)
         if !rowNum
             break
-        add_log("Removing hotkey: " configured_hotkeys[rowNum - nRemoved].HotkeyText)
+        add_log("Removing hotkey: " formatHotkeyText(configured_hotkeys[rowNum - nRemoved].Hotkey))
         Hotkey configured_hotkeys[rowNum - nRemoved].Hotkey, "Off"
         configured_hotkeys.RemoveAt(rowNum - nRemoved++)
     }
@@ -695,7 +702,7 @@ Hotkeys_RemoveHotkey(*) {
 Hotkeys_ClearAllHotkeys(*) {
     for hotkeyData in configured_hotkeys {
         Hotkey hotkeyData.Hotkey, "Off"
-        add_log("Removed hotkey: " hotkeyData.HotkeyText)
+        add_log("Removed hotkey: " formatHotkeyText(hotkeyData.Hotkey))
     }
     configured_hotkeys.Length := 0
     Hotkeys_updateHotkeyBindings()

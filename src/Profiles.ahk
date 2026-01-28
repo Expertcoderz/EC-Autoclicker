@@ -122,28 +122,34 @@ ProfileLoad(profileName, *) {
                     if !A_LoopField
                         continue
 
-                    local targetDataMatch
-                    RegExMatch A_LoopField, "^(?P<ApplicableClickCount>.+?)%(?P<Delay>.+?)"
-                        . "%(?P<Type>\d?)%(?P<Coords>.+?)%(?P<RelativeTo>\d)$"
-                        , &targetDataMatch
+                    local targetData := deserializeObject(A_LoopField, {
+                        ApplicableClickCount: 0,
+                        Delay: 0,
+                        Type: "Point",
+                        X: 0,
+                        Y: 0,
+                        XMin: 0,
+                        YMin: 0,
+                        XMax: 0,
+                        YMax: 0,
+                        RelativeTo: "Screen",
+                    })
 
-                    local targetData := {
-                        ApplicableClickCount: targetDataMatch["ApplicableClickCount"],
-                        Delay: targetDataMatch["Delay"],
-                        Type: targetDataMatch["Type"],
-                        RelativeTo: targetDataMatch["RelativeTo"]
-                    }
-
-                    local coords := StrSplit(targetDataMatch["Coords"], ",")
-                    switch targetDataMatch["Type"] {
-                    case 1:
-                        targetData.X := coords[1],
-                        targetData.Y := coords[2]
-                    case 2:
-                        targetData.XMin := coords[1],
-                        targetData.YMin := coords[2],
-                        targetData.XMax := coords[3],
-                        targetData.YMax := coords[4]
+                    switch targetData.Type {
+                    case "Point":
+                        targetData.X := Number(targetData.X)
+                        targetData.Y := Number(targetData.Y)
+                        targetData.XMin := unset
+                        targetData.YMin := unset
+                        targetData.XMax := unset
+                        targetData.YMax := unset
+                    case "Box":
+                        targetData.X := unset
+                        targetData.Y := unset
+                        targetData.XMin := Number(targetData.XMin)
+                        targetData.YMin := Number(targetData.YMin)
+                        targetData.XMax := Number(targetData.XMax)
+                        targetData.YMax := Number(targetData.YMax)
                     }
 
                     configured_targets.Push(targetData)
@@ -158,16 +164,12 @@ ProfileLoad(profileName, *) {
                     if !A_LoopField
                         continue
 
-                    local hotkeyDataMatch
-                    RegExMatch A_LoopField, "^(?P<Hotkey>.+?)%(?P<Scope>\d)%(?P<Action>\d)$"
-                        , &hotkeyDataMatch
-
-                    configured_hotkeys.Push({
-                        Hotkey: hotkeyDataMatch["Hotkey"],
-                        HotkeyText: formatHotkeyText(hotkeyDataMatch["Hotkey"]),
-                        Scope: hotkeyDataMatch["Scope"],
-                        Action: hotkeyDataMatch["Action"]
+                    local hotkeyData := deserializeObject(A_LoopField, {
+                        Hotkey: "~?",
+                        Scope: "Global",
+                        Action: "Start",
                     })
+                    configured_hotkeys.Push(hotkeyData)
                 }
 
                 Hotkeys_updateHotkeyBindings()
@@ -277,12 +279,7 @@ ProfileCreate(*) {
 
         local serializedTargets := ""
         for targetData in configured_targets
-            serializedTargets .= targetData.ApplicableClickCount
-                . "%" targetData.Delay
-                . "%" targetData.Type
-                . "%" (targetData.Type = 1 ? targetData.X "," targetData.Y
-                : targetData.XMin "," targetData.YMin "," targetData.XMax "," targetData.YMax)
-                . "%" targetData.RelativeTo "`n"
+            serializedTargets .= serializeObject(targetData) "`n"
 
         RegWrite serializedTargets
             , "REG_MULTI_SZ"
@@ -291,7 +288,7 @@ ProfileCreate(*) {
 
         local serializedHotkeys := ""
         for hotkeyData in configured_hotkeys
-            serializedHotkeys .= hotkeyData.Hotkey "%" hotkeyData.Scope "%" hotkeyData.Action "`n"
+            serializedHotkeys .= serializeObject(hotkeyData) "`n"
 
         RegWrite serializedHotkeys
             , "REG_MULTI_SZ"
@@ -410,7 +407,7 @@ ProfileManage(*) {
                 add_log("Deleted profile '" selectedProfileName "'")
 
                 local defaultProfileName := RegRead(REG_KEY_PATH "\Profiles", "DefaultProfile", false)
-                if defaultProfileName == selectedProfileName
+                if defaultProfileName = selectedProfileName
                     ProfileMakeDefault(profileNewName)
 
                 ProfileRenamePromptGui.Hide()
@@ -465,8 +462,8 @@ ProfileManage(*) {
     }
 
     ProfileImport(*) {
-        local fileLocations := FileSelect("M",
-            , "Import Autoclicker Profile(s)", "Autoclicker Profiles (*" FILE_EXT ")"
+        local fileLocations := FileSelect("M"
+            , , "Import Autoclicker Profile(s)", "Autoclicker Profiles (*" FILE_EXT ")"
         )
         for fileLocation in fileLocations {
             add_log("Importing profile from " fileLocation)
