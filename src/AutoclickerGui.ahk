@@ -659,7 +659,7 @@ Hotkeys_AddHotkey(*) {
                     "The hotkey '" formatHotkeyText(hotkeyData.Hotkey) "' is already in use."
                     . " Would you like to overwrite it?"
                     , "Overwrite Hotkey"
-                    , "YesNo Iconi 8192"
+                    , "YesNo Iconi 8192 Owner" AutoclickerGui.Hwnd
                 ) = "Yes"
                     configured_hotkeys.RemoveAt(A_Index)
                 else

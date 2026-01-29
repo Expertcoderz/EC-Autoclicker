@@ -1,13 +1,13 @@
 ; Profiles handling backend and UI
 
-validateProfileNameInput(profileName) {
+validateProfileNameInput(profileName, ownerHwnd) {
     if RegExReplace(profileName, "\s") = "" ; blank input
         return false
 
     if profileName ~= "[\\/:\*\?`"<>\|]" {
         MsgBox "A profile name can't contain any of the following characters:`n\ / : * ? `" < > |"
             , "Create/Update Profile"
-            , "Iconx 8192"
+            , "Iconx 8192 Owner" ownerHwnd
         return false
     }
 
@@ -16,7 +16,7 @@ validateProfileNameInput(profileName) {
             if MsgBox(
                 "A profile similarly named '" A_LoopRegName "' already exists. Would you like to overwrite it?"
                 , "Overwrite Profile"
-                , "YesNo Iconi 8192"
+                , "YesNo Iconi 8192 Owner" ownerHwnd
             ) = "Yes" {
                 RegDeleteKey A_LoopRegKey "\" A_LoopRegName
                 return true
@@ -28,12 +28,13 @@ validateProfileNameInput(profileName) {
     return true
 }
 
-assertProfileExists(profileName) {
+assertProfileExists(profileName, ownerHwnd := false) {
     Loop Reg REG_KEY_PATH "\Profiles", "K" {
         if A_LoopRegName = profileName
             return true
     }
-    MsgBox "The profile '" profileName "' does not exist or has been deleted.", "Error", "Iconx 8192"
+    MsgBox "The profile '" profileName "' does not exist or has been deleted."
+        , "Error", "Iconx 8192" (ownerHwnd ? " Owner" ownerHwnd : "")
     return false
 }
 
@@ -76,7 +77,7 @@ refreshProfileSelectionLists() {
     if defaultProfileName && !defaultProfileExists {
         MsgBox "The profile '" defaultProfileName "' was set as default but no longer exists."
             . "`nThe default profile will be cleared."
-            , "Error", "Iconx 262144"
+            , "Error", "Iconx 8192 Owner" AutoclickerGui.Hwnd
         ProfileMakeDefault(defaultProfileName)
     }
 
@@ -103,7 +104,7 @@ ProfileLoad(profileName, *) {
 
     add_log("Loading profile '" profileName "'")
 
-    if !assertProfileExists(profileName) {
+    if !assertProfileExists(profileName, AutoclickerGui.Hwnd) {
         refreshProfileSelectionLists()
         return
     }
@@ -201,7 +202,7 @@ ProfileLoad(profileName, *) {
     Key: {}
     Message: {}
     )", profileName, A_LoopRegName, err.Message)
-            , "Load Profile", "CancelTryAgainContinue Iconx 262144") {
+            , "Load Profile", "CancelTryAgainContinue Iconx 8192 Owner" AutoclickerGui.Hwnd) {
             case "Cancel":
                 refreshProfileSelectionLists()
                 return
@@ -250,12 +251,11 @@ ProfileCreate(*) {
 
     ProfileNamePromptGui["ProfileNameEdit"].Value := ""
     ProfileNamePromptGui.Opt("-Disabled")
-    AutoclickerGui.Opt("+Disabled")
     showGuiAtAutoclickerGuiPos(ProfileNamePromptGui)
 
     SubmitPrompt(*) {
         local profileName := ProfileNamePromptGui["ProfileNameEdit"].Value
-        if !validateProfileNameInput(profileName)
+        if !validateProfileNameInput(profileName, ProfileNamePromptGui.Hwnd)
             return
 
         add_log("Reading configuration data")
@@ -355,7 +355,7 @@ ProfileManage(*) {
             }
         }
         MsgBox "The profile '" selectedProfileName "' does not exist or has already been deleted."
-            , "Error", "Iconx 8192"
+            , "Error", "Iconx 8192 Owner" ProfilesGui.Hwnd
         refreshProfileList()
     }
 
@@ -387,7 +387,7 @@ ProfileManage(*) {
 
         SubmitPrompt(*) {
             local profileNewName := ProfileRenamePromptGui["ProfileNameEdit"].Value
-            if !validateProfileNameInput(profileNewName)
+            if !validateProfileNameInput(profileNewName, ProfileRenamePromptGui.Hwnd)
                 return
 
             ProfileRenamePromptGui.Opt("+Disabled")
@@ -418,7 +418,7 @@ ProfileManage(*) {
             }
 
             MsgBox "The profile '" selectedProfileName "' does not exist or has been deleted."
-                , "Error", "Iconx 8192"
+                , "Error", "Iconx 8192 Owner" ProfileRenamePromptGui.Hwnd
             ProfileRenamePromptGui.Opt("-Disabled")
             refreshProfileList()
         }
@@ -476,7 +476,7 @@ ProfileManage(*) {
                     if MsgBox(
                         "A profile similarly named '" A_LoopRegName "' already exists."
                         . " Would you like to overwrite it with the imported profile?"
-                        , "Overwrite Profile", "YesNo Iconi 8192"
+                        , "Overwrite Profile", "YesNo Iconi 8192 Owner" ProfilesGui.Hwnd
                     ) = "Yes"
                         RegDeleteKey A_LoopRegKey "\" A_LoopRegName
                     else
@@ -521,7 +521,7 @@ An error occurred whilst importing the profile '{}' from {}.
 This is usually due to the file's data being corrupt or invalid.
 
 Message: {}
-)", profileName, fileLocation, err.Message), "Import Profile", "Iconx 8192"
+)", profileName, fileLocation, err.Message), "Import Profile", "Iconx 8192 Owner" ProfilesGui.Hwnd
                 return
             }
 

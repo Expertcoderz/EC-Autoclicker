@@ -3,7 +3,10 @@
 showGuiAtAutoclickerGuiPos(gui) {
     local posX, posY
     AutoclickerGui.GetPos(&posX, &posY)
+
+    AutoclickerGui.Opt("+Disabled")
     gui.Opt((is_always_on_top_on ? "+" : "-") "AlwaysOnTop")
+
     gui.Show("x" posX " y" posY)
 }
 
