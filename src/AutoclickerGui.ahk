@@ -587,7 +587,7 @@ Hotkeys_updateHotkeyBindings() {
                 }
             }
 
-            if hotkeyData.Scope == "Global" && !WinActive("ahk_id " AutoclickerGui.Hwnd)
+            if !(hotkeyData.Scope == "Global" || WinActive("ahk_id " AutoclickerGui.Hwnd))
                 return
     
             switch hotkeyData.Action {
