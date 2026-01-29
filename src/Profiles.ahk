@@ -469,7 +469,7 @@ ProfileManage(*) {
             add_log("Importing profile from " fileLocation)
 
             local profileName
-            SplitPath fileLocation, &profileName
+            SplitPath fileLocation, , , , &profileName
 
             Loop Reg REG_KEY_PATH "\Profiles", "K" {
                 if A_LoopRegName = profileName {
@@ -491,15 +491,25 @@ ProfileManage(*) {
                     if !A_LoopField
                         continue
 
-                    local configMatch
-                    RegExMatch A_LoopField, "^(?P<Name>\w+?)=(?P<Value>.+)$", &configMatch
-                    add_log("Read: " configMatch["Name"] " = " configMatch["Value"])
+                    local parts := StrSplit(A_LoopField, "=", , 2)
+                    if parts.Length != 2
+                        throw ValueError("Invalid field on line " A_Index)
 
-                    RegWrite (configMatch["Name"] = "Targets" || configMatch["Name"] = "Hotkeys"
-                        ? StrReplace(configMatch["Value"], "`t", "`n") : configMatch["Value"])
-                        , configMatch["Name"] ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
-                        , REG_KEY_PATH "\Profiles\" profileName
-                        , configMatch["Name"]
+                    local name := parts[1]
+                    local value := parts[2]
+
+                    add_log("Read: " name " = " value)
+
+                    if name = "Targets" || name = "Hotkeys"
+                        RegWrite StrReplace(value, "`t", "`n")
+                            , "REG_SZ"
+                            , REG_KEY_PATH "\Profiles\" profileName
+                            , name
+                    else
+                        RegWrite value
+                            , name ~= "DateTime" ? "REG_SZ" : "REG_DWORD"
+                            , REG_KEY_PATH "\Profiles\" profileName
+                            , name
                 }
             } catch as err {
                 add_log("Import Profile error: " err.Message)
