@@ -1,5 +1,35 @@
 ; Main autoclicking routines
 
+getCoords(clickTargetData) {
+    local coords
+
+    if clickTargetData.Type == "Point"
+        coords := [clickTargetData.X, clickTargetData.Y]
+    else
+        coords := [
+            Random(clickTargetData.XMin, clickTargetData.XMax),
+            Random(clickTargetData.YMin, clickTargetData.YMax),
+        ]
+
+    if clickTargetData.CoordType == "Pixels"
+        return coords[1] " " coords[2]
+
+    if clickTargetData.RelativeTo == "Screen"
+        return (
+            (A_ScreenWidth * (coords[1] / 100))
+            " "
+            (A_ScreenHeight * (coords[2] / 100))
+        )
+
+    local winWidth, winHeight
+    WinGetPos , , &winWidth, &winHeight, "A"
+    return (
+        (winWidth * (coords[1] / 100))
+        " "
+        ((winHeight - 90) * (coords[2] / 100))
+    )
+}
+
 Start(*) {
     AutoclickerGui["Tab"].Enabled := false
     AutoclickerGui["StartButton"].Enabled := false
@@ -52,10 +82,7 @@ Start(*) {
             }
 
             CoordMode "Mouse", clickTargetData.RelativeTo
-
-            coords := clickTargetData.Type == "Point" ? clickTargetData.X " " clickTargetData.Y
-                    : (Random(clickTargetData.XMin, clickTargetData.XMax)
-                    . " " Random(clickTargetData.YMin, clickTargetData.YMax))
+            coords := getCoords(clickTargetData)
         } else
             coords := ""
 

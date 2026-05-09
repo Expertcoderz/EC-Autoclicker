@@ -134,6 +134,7 @@ ProfileLoad(profileName, *) {
                         XMax: 0,
                         YMax: 0,
                         RelativeTo: "Screen",
+                        CoordType: "Pixels",
                     })
 
                     switch targetData.Type {
@@ -547,7 +548,7 @@ if A_Args.Length > 0 && A_Args[1] = "/profile" {
         ExitApp
 
     Collapse()
- 
+
     ProfileLoad(A_Args[2])
     Start()
 } else {

@@ -272,12 +272,14 @@ Scheduling_StopAfterTimeToggled(*) {
 }
 
 Positioning_formatTargetCoords(targetData) {
+    local percent := targetData.CoordType == "Percentage" ? "%" : ""
+
     switch targetData.Type {
     case "Point":
-        return targetData.X ", " targetData.Y
+        return targetData.X percent ", " targetData.Y percent
     case "Box":
-        return targetData.XMin ", " targetData.YMin
-            . " -- " targetData.XMax ", " targetData.YMax
+        return targetData.XMin percent ", " targetData.YMin percent
+            . " -- " targetData.XMax percent ", " targetData.YMax percent
     }
 }
 
@@ -329,40 +331,52 @@ Positioning_prepareTargetEditor(submitCallback) {
         TargetEditorGui.AddEdit("xp+98 yp-2 w45 vTargetDelayEdit Limit Number", "0")
         TargetEditorGui.AddText("xp+48 yp+2", "ms")
 
-        TargetEditorGui.AddGroupBox("xm w226 h110 Section", "Coordinates")
+        TargetEditorGui.AddGroupBox("xm w250 h110 Section", "Coordinates")
         TargetEditorGui.AddRadio("xs+10 yp+20 vTargetTypePointRadio", SZ_TABLE.Positioning_TargetType.Point)
-            .OnEvent("Click", TargetTypeSelectionChanged)
+            .OnEvent("Click", TargetOrCoordTypeSelectionChanged)
         TargetEditorGui.AddRadio("yp vTargetTypeBoxRadio", SZ_TABLE.Positioning_TargetType.Box)
-            .OnEvent("Click", TargetTypeSelectionChanged)
+            .OnEvent("Click", TargetOrCoordTypeSelectionChanged)
 
         PerTypeCoordControls := {
             TargetTypePointRadio: [
                 TargetEditorGui.AddText("xs+10 ys+50 Hidden", "X:"),
                 TargetEditorGui.AddEdit("xp+20 yp-2 w30 vTargetXPosNumEdit Limit Number Hidden", "0"),
-                TargetEditorGui.AddText("xp+45 yp+2 Hidden", "Y:"),
-                TargetEditorGui.AddEdit("xp+20 yp-2 w30 vTargetYPosNumEdit Limit Number Hidden", "0")
+                TargetEditorGui.AddText("xp+32 yp+2 vTargetXPercent Hidden", "%"),
+                TargetEditorGui.AddText("xp+30 yp Hidden", "Y:"),
+                TargetEditorGui.AddEdit("xp+20 yp-2 w30 vTargetYPosNumEdit Limit Number Hidden", "0"),
+                TargetEditorGui.AddText("xp+32 yp+2 vTargetYPercent Hidden", "%"),
             ],
             TargetTypeBoxRadio: [
                 TargetEditorGui.AddText("xs+10 ys+50 Hidden", "X min:"),
                 TargetEditorGui.AddEdit("xp+34 yp-2 w30 vTargetXMinPosNumEdit Limit Number Hidden", "0"),
-                TargetEditorGui.AddText("xp+45 yp+2 Hidden", "Y min:"),
+                TargetEditorGui.AddText("xp+32 yp+2 vTargetXMinPercent Hidden", "%"),
+                TargetEditorGui.AddText("xp+30 yp Hidden", "Y min:"),
                 TargetEditorGui.AddEdit("xp+35 yp-2 w30 vTargetYMinPosNumEdit Limit Number Hidden", "0"),
+                TargetEditorGui.AddText("xp+32 yp+2 vTargetYMinPercent Hidden", "%"),
                 TargetEditorGui.AddText("xs+10 yp+30 Hidden", "X max:"),
                 TargetEditorGui.AddEdit("xp+34 yp-2 w30 vTargetXMaxPosNumEdit Limit Number Hidden", "0"),
-                TargetEditorGui.AddText("xp+45 yp+2 Hidden", "Y max:"),
-                TargetEditorGui.AddEdit("xp+35 yp-2 w30 vTargetYMaxPosNumEdit Limit Number Hidden", "0")
+                TargetEditorGui.AddText("xp+32 yp+2 vTargetXMaxPercent Hidden", "%"),
+                TargetEditorGui.AddText("xp+30 yp Hidden", "Y max:"),
+                TargetEditorGui.AddEdit("xp+35 yp-2 w30 vTargetYMaxPosNumEdit Limit Number Hidden", "0"),
+                TargetEditorGui.AddText("xp+32 yp+2 vTargetYMaxPercent Hidden", "%"),
             ]
         }
 
-        TargetEditorGui.AddGroupBox("xs yp+40 w145 h59 Section", "Position relative to")
+        TargetEditorGui.AddGroupBox("xs yp+40 w148 h59 Section", "Position relative to")
         TargetEditorGui.AddRadio("xs+10 yp+20 vTargetRelativeToScreenRadio", "Entire &screen (ABS)")
             .OnEvent("Click", TargetRelativeToSelectionChanged)
         TargetEditorGui.AddRadio("xp vTargetRelativeToFocusedRadio", "Focused &window (REL)")
             .OnEvent("Click", TargetRelativeToSelectionChanged)
 
-        TargetEditorGui.AddButton("ys+6 w80 Default", "OK")
+        TargetEditorGui.AddGroupBox("xs+158 ys w92 h59 Section", "Coordinate type")
+        TargetEditorGui.AddRadio("xs+10 yp+20 vTargetCoordTypePixelRadio", "&Pixels")
+            .OnEvent("Click", TargetOrCoordTypeSelectionChanged)
+        TargetEditorGui.AddRadio("xp vTargetCoordTypePercentRadio", "P&ercentage")
+            .OnEvent("Click", TargetOrCoordTypeSelectionChanged)
+
+        TargetEditorGui.AddButton("xm+80 yp+30 w80 Default", "OK")
             .OnEvent("Click", Submit)
-        TargetEditorGui.AddButton("xp wp", "Cancel")
+        TargetEditorGui.AddButton("xp+90 yp wp", "Cancel")
             .OnEvent("Click", (*) => hideOwnedGui(TargetEditorGui))
 
         TargetEditorGui.AddStatusBar("vStatusBar")
@@ -372,24 +386,48 @@ Positioning_prepareTargetEditor(submitCallback) {
 
         add_log("Created target adder GUI")
 
-        TargetTypeSelectionChanged(TargetEditorGui["TargetTypePointRadio"])
+        TargetOrCoordTypeSelectionChanged()
     }
 
     SetTimer updateTargetAdderGuiStatusBar, 100
 
     updateTargetAdderGuiStatusBar() {
-        CoordMode "Mouse", TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0 ? "Screen" : "Client"
+        local relativeToScreen := TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0
+
+        CoordMode "Mouse", relativeToScreen ? "Screen" : "Client"
         local mouseX, mouseY
         MouseGetPos &mouseX, &mouseY
-        TargetEditorGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 2, 2)
+
+        if TargetEditorGui["TargetCoordTypePixelRadio"].Value != 0
+            TargetEditorGui["StatusBar"].SetText(Format("X={} Y={}", mouseX, mouseY), 2, 2)
+        else {
+            local winWidth, winHeight
+            if !relativeToScreen
+                WinGetPos , , &winWidth, &winHeight, "A"
+
+            TargetEditorGui["StatusBar"].SetText(
+                Format(
+                    "X={:.2f}% Y={:.2f}%",
+                    mouseX / (relativeToScreen ? A_ScreenWidth : winWidth) * 100,
+                    mouseY / (relativeToScreen ? A_ScreenHeight : (winHeight - 90)) * 100
+                ),
+                2, 2
+            )
+        }
+
         if !ControlGetVisible(TargetEditorGui.Hwnd, "ahk_id " TargetEditorGui.Hwnd)
             SetTimer , 0 ; mark timer for deletion
     }
 
-    TargetTypeSelectionChanged(radio, *) {
+    TargetOrCoordTypeSelectionChanged(*) {
+        local isPercentRelevant := TargetEditorGui["TargetCoordTypePercentRadio"].Value == 1
+
         for key, list in PerTypeCoordControls.OwnProps() {
-            for ctrl in list
-                ctrl.Visible := key == radio.Name
+            local isGroupRelevant := TargetEditorGui[key].Value == 1
+            for ctrl in list {
+                ctrl.Visible := isGroupRelevant
+                    && (isPercentRelevant || !InStr(ctrl.Name, "Percent"))
+            }
         }
     }
 
@@ -398,9 +436,7 @@ Positioning_prepareTargetEditor(submitCallback) {
     }
 
     updateState() {
-        TargetTypeSelectionChanged(TargetEditorGui["TargetTypePointRadio"].Value != 0
-            ? TargetEditorGui["TargetTypePointRadio"]
-            : TargetEditorGui["TargetTypeBoxRadio"])
+        TargetOrCoordTypeSelectionChanged()
 
         TargetRelativeToSelectionChanged(TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0
             ? TargetEditorGui["TargetRelativeToScreenRadio"]
@@ -414,7 +450,8 @@ Positioning_prepareTargetEditor(submitCallback) {
             ApplicableClickCount: TargetEditorGui["TargetApplicableClickCountEdit"].Value,
             Delay: TargetEditorGui["TargetDelayEdit"].Value,
             Type: TargetEditorGui["TargetTypePointRadio"].Value != 0 ? "Point" : "Box",
-            RelativeTo: TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0 ? "Screen" : "Client"
+            RelativeTo: TargetEditorGui["TargetRelativeToScreenRadio"].Value != 0 ? "Screen" : "Client",
+            CoordType: TargetEditorGui["TargetCoordTypePixelRadio"].Value != 0 ? "Pixels" : "Percentage",
         }
         if TargetEditorGui["TargetTypePointRadio"].Value != 0 {
             targetData.X := Number(TargetEditorGui["TargetXPosNumEdit"].Value)
@@ -449,6 +486,8 @@ Positioning_AddTarget(*) {
     TargetEditorGui["TargetYMaxPosNumEdit"].Value := 0
     TargetEditorGui["TargetRelativeToScreenRadio"].Value := 1
     TargetEditorGui["TargetRelativeToFocusedRadio"].Value := 0
+    TargetEditorGui["TargetCoordTypePixelRadio"].Value := 1
+    TargetEditorGui["TargetCoordTypePercentRadio"].Value := 0
 
     updateState()
     showGuiAtAutoclickerGuiPos(TargetEditorGui)
@@ -497,6 +536,8 @@ Positioning_EditTarget(*) {
     }
     TargetEditorGui["TargetRelativeToScreenRadio"].Value := targetData.RelativeTo == "Screen"
     TargetEditorGui["TargetRelativeToFocusedRadio"].Value := targetData.RelativeTo == "Client"
+    TargetEditorGui["TargetCoordTypePixelRadio"].Value := targetData.CoordType == "Pixels"
+    TargetEditorGui["TargetCoordTypePercentRadio"].Value := targetData.CoordType == "Percentage"
 
     updateState()
     showGuiAtAutoclickerGuiPos(TargetEditorGui)
