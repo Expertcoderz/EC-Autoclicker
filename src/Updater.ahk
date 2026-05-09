@@ -78,7 +78,7 @@ if A_IsCompiled {
         MsgBox "EC Autoclicker has been updated successfully.`nNew version: " SubStr(FileGetVersion(A_ScriptFullPath), 1, -2)
             , "Update", "Iconi 262144"
     } else if RegRead(REG_KEY_PATH, "AutoUpdate", true)
-        && A_NowUTC - RegRead(REG_KEY_PATH, "LastUpdateCheck", 0) >= 604800
+        && DateDiff(A_NowUTC, RegRead(REG_KEY_PATH, "LastUpdateCheck", 0), "Days") >= 7
     {
         add_log("Automatically checking for newer version")
         CheckForUpdates(false)
