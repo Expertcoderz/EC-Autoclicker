@@ -24,6 +24,12 @@ with [UPX](https://upx.github.io/) for compression.
 - Position the mouse pointer every click
   - at a specific point
   - randomly within a specific box boundary
+- Specify coordinates relative to
+  - entire screen
+  - focused window
+- Specify coordinates in
+  - pixels
+  - percentage of screen size or window size
 - Hotkeys (configurable; multiple hotkeys per action are supported)
   - start
   - stop
